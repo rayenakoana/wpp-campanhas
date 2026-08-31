@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>WPP Campanhas — Protótipo completo v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0E0E15; --surface:#13131C; --surface-2:#17171F; --line:#232330; --line-soft:#1B1B26;
+    --red:#E8192C; --gold:#C9A017; --text:#EDEDF2; --text-2:#8F8FA3; --text-3:#5C5C70; --green:#3DBE7B; --amber:#D97E2B;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{font-size:15px;}
+  body{
+    background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; display:flex; min-height:100vh; -webkit-font-smoothing:antialiased;
+    position:relative;
+  }
+  body::before{
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(232,25,44,0.10), transparent 60%),
+      radial-gradient(700px 460px at -10% 100%, rgba(201,160,23,0.05), transparent 60%),
+      radial-gradient(560px 400px at 50% 115%, rgba(232,25,44,0.05), transparent 65%);
+    animation:ambient 14s ease-in-out infinite alternate;
+  }
+  @keyframes ambient{
+    0%{opacity:.75; transform:translateY(0);}
+    100%{opacity:1; transform:translateY(-12px);}
+  }
+  @media (prefers-reduced-motion: reduce){ body::before{animation:none;} }
+  .sidebar, .main{position:relative; z-index:1;}
+  .num{font-variant-numeric:tabular-nums; letter-spacing:-0.01em;}
+
+  /* Sidebar */
+  .sidebar{width:220px; background:rgba(14,14,21,0.72); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-right:1px solid rgba(255,255,255,0.05); padding:20px 12px; flex-shrink:0;}
+  .brand{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; padding:2px 10px 26px; display:flex; align-items:center; gap:9px;}
+  .brand-mark{width:22px;height:22px;border-radius:6px;background:var(--red); display:flex;align-items:center;justify-content:center; font-size:11px; font-weight:800; color:#fff;}
+  .nav-label{font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-3); padding:14px 10px 6px; font-weight:600;}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:7px; font-size:13.5px; color:var(--text-2); cursor:pointer; margin-bottom:1px; font-weight:500;}
+  .nav-item:hover{background:var(--surface); color:var(--text);}
+  .nav-item.active{background:var(--surface-2); color:var(--text);}
+  .nav-item svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;flex-shrink:0;}
+  .nav-item.active svg{stroke:var(--red);}
+
+  /* Layout */
+  .main{flex:1; max-width:none;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; padding:18px 40px; border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(14,14,21,0.55); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); position:sticky; top:0; z-index:20;}
+  h1{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:22px;}
+  .live-tag{font-size:11px; color:var(--text-2); display:inline-flex; align-items:center; gap:6px; margin-left:14px; font-weight:500;}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+  .content{padding:28px 40px 72px; max-width:1560px;}
+  .page{display:none;}
+  .page.active{display:block;}
+
+  /* Buttons */
+  .btn{display:inline-flex; align-items:center; gap:7px; font-family:'Inter'; font-size:13px; font-weight:500; padding:9px 14px; border-radius:8px; cursor:pointer; border:1px solid var(--line); background:transparent; color:var(--text);}
+  .btn:hover{background:var(--surface); border-color:#333342;}
+  .btn.primary{background:var(--red); border-color:var(--red); color:#fff; font-weight:600;}
+  .btn.primary:hover{background:#c9142a;}
+  .btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.6;}
+
+  /* KPI grid */
+  .kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.07); border-top-color:rgba(255,255,255,0.11); border-radius:14px; overflow:hidden; margin-bottom:20px; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 10px 32px rgba(0,0,0,0.28);}
+  .kpi-card{background:linear-gradient(165deg, rgba(19,19,28,0.82) 0%, rgba(23,23,31,0.72) 100%); padding:19px 22px;}
+  .kpi-label{font-size:12px; color:var(--text-2); margin-bottom:12px; font-weight:500; display:flex; align-items:center; gap:7px;}
+  .kpi-card{position:relative;}
+  .kpi-card::before{content:''; position:absolute; top:0; left:22px; right:22px; height:1px; background:linear-gradient(90deg, transparent, rgba(232,25,44,0.35), transparent); opacity:0; transition:opacity .2s;}
+  .kpi-card:hover::before{opacity:1;}
+  .kpi-value{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:30px; line-height:1;}
+  .kpi-sub{font-size:12px; color:var(--text-3); margin-top:9px;}
+  .kpi-sub .pos{color:var(--green); font-weight:500;}
+  .base-mark{width:7px;height:7px;border-radius:2px;background:var(--red); display:inline-block;}
+
+  /* Panels */
+  .grid-2{display:grid; grid-template-columns:1.15fr 1fr; gap:14px; margin-bottom:14px;}
+  .panel{
+    background:linear-gradient(165deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.015) 45%, rgba(255,255,255,0.03) 100%);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.07); border-top-color:rgba(255,255,255,0.11);
+    border-radius:14px; padding:20px 22px;
+    box-shadow:0 10px 32px rgba(0,0,0,0.28);
+  }
+  .panel-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px;}
+  .panel-title{font-size:13.5px; font-weight:600;}
+  .panel-title span{color:var(--text-3); font-weight:400; font-size:12px; margin-left:6px;}
+  .chart-wrap{height:190px;}
+
+  /* Tables */
+  .data-table{width:100%; border-collapse:collapse; background:linear-gradient(165deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,0.07); border-top-color:rgba(255,255,255,0.11); border-radius:14px; overflow:hidden; box-shadow:0 10px 32px rgba(0,0,0,0.28);}
+  .data-table thead th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-3); padding:11px 20px; border-bottom:1px solid var(--line-soft); font-weight:600;}
+  .data-table thead th.r,.data-table td.r{text-align:right;}
+  .data-table tbody td{padding:14px 20px; font-size:13.5px; border-bottom:1px solid var(--line-soft); vertical-align:middle;}
+  .data-table tbody tr:last-child td{border-bottom:none;}
+  .data-table tbody tr.rowlink{cursor:pointer;}
+  .data-table tbody tr.rowlink:hover{background:rgba(255,255,255,0.035);}
+  .row-title{font-weight:500;}
+  .row-sub{font-size:11.5px; color:var(--text-3); margin-top:2px;}
+  .cell-num{font-weight:600;} .cell-gold{color:var(--gold); font-weight:600;}
+  .arrow-cell{color:var(--text-3); font-size:14px; width:36px;}
+
+  .status-txt{font-size:12.5px; font-weight:500; display:inline-flex; align-items:center; gap:6px;}
+  .status-txt::before{content:''; width:6px;height:6px;border-radius:50%;}
+  .st-ok{color:var(--green);} .st-ok::before{background:var(--green);}
+  .st-fail{color:var(--red);} .st-fail::before{background:var(--red);}
+  .st-warn{color:var(--amber);} .st-warn::before{background:var(--amber);}
+  .st-neutral{color:var(--text-2);} .st-neutral::before{background:var(--text-3);}
+
+  /* Bars */
+  .funnel-list{display:flex; flex-direction:column; gap:15px;}
+  .funnel-row .flabel{display:flex; justify-content:space-between; font-size:13px; margin-bottom:7px;}
+  .funnel-row .flabel b{font-weight:500;}
+  .funnel-row .flabel span{color:var(--text-2); font-weight:600; font-size:12.5px;}
+  .bartrack{height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden;}
+  .barfill{height:100%; border-radius:3px; background:var(--red); opacity:.85;}
+
+  .conv-funnel{display:flex; flex-direction:column; gap:14px;}
+  .conv-step{display:grid; grid-template-columns:170px 1fr 110px; align-items:center; gap:16px;}
+  .conv-step .step-name{font-size:13px; font-weight:500;}
+  .conv-step .step-name small{display:block; font-size:11px; color:var(--text-3); font-weight:400;}
+  .conv-track{height:8px; border-radius:4px; background:var(--surface-2); overflow:hidden;}
+  .conv-fill{height:100%; border-radius:4px; background:var(--red);}
+  .conv-nums{display:flex; align-items:baseline; gap:8px; justify-content:flex-end;}
+  .conv-abs{font-size:13.5px; font-weight:600;}
+  .conv-rel{font-size:11.5px; color:var(--text-3);}
+
+  .event-chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:var(--text-2);}
+  .event-chip::before{content:''; width:7px;height:7px;border-radius:2px;background:var(--dot,var(--text-3));}
+  .ev-lead{--dot:var(--red);} .ev-complete{--dot:var(--gold);} .ev-schedule{--dot:var(--green);} .ev-checkout{--dot:var(--amber);} .ev-purchase{--dot:#9B7BD8;}
+
+  /* Tabs */
+  .tabs{display:inline-flex; background:rgba(255,255,255,0.035); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:3px; gap:2px; margin-bottom:24px;}
+  .tab{padding:7px 16px; font-size:13px; font-weight:500; color:var(--text-2); cursor:pointer; border-radius:6px;}
+  .tab.active{background:rgba(255,255,255,0.08); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,0.09);}
+  .subtabs{display:flex; gap:18px; margin-bottom:18px; border-bottom:1px solid var(--line-soft);}
+  .subtab{padding:0 2px 10px; font-size:13px; font-weight:500; color:var(--text-3); cursor:pointer; border-bottom:1.5px solid transparent; margin-bottom:-1px;}
+  .subtab.active{color:var(--text); border-bottom-color:var(--red);}
+
+  /* Forms */
+  .form-grid{display:grid; grid-template-columns:1fr 380px; gap:14px; align-items:start;}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:7px;}
+  .input, textarea.input, select.input{width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); font-size:13.5px; padding:10px 12px; border-radius:8px; font-family:'Inter';}
+  .input:focus{outline:none; border-color:#3a3a4c;}
+  textarea.input{min-height:110px; resize:vertical; line-height:1.5;}
+  .hint{font-size:11.5px; color:var(--text-3); margin-top:6px;}
+  .var-chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .var-chip{font-size:12px; background:var(--surface-2); border:1px solid var(--line); color:var(--text-2); padding:4px 10px; border-radius:6px; cursor:pointer; font-family:monospace;}
+  .var-chip:hover{color:var(--text); border-color:#3a3a4c;}
+  .seg-option{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line-soft); border-radius:8px; margin-bottom:6px; cursor:pointer; font-size:13px;}
+  .seg-option:hover{background:var(--surface-2);}
+  .seg-option input{accent-color:var(--red);}
+  .seg-option .cnt{margin-left:auto; color:var(--text-3); font-size:12px;}
+  .preview-phone{background:var(--bg); border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .bubble{background:#1F2C24; border-radius:10px; padding:12px 14px; font-size:13px; line-height:1.5; max-width:90%;}
+  .bubble small{display:block; color:var(--text-3); font-size:10.5px; margin-top:8px; text-align:right;}
+  .health-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line-soft); font-size:13px;}
+  .health-row:last-child{border-bottom:none;}
+
+  /* Integrações */
+  .int-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  .int-card{background:linear-gradient(165deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.018) 100%); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,0.07); border-top-color:rgba(255,255,255,0.11); border-radius:14px; padding:20px 22px; display:flex; justify-content:space-between; align-items:flex-start; box-shadow:0 10px 32px rgba(0,0,0,0.28);}
+  .int-name{font-weight:600; font-size:14px;}
+  .int-desc{font-size:12.5px; color:var(--text-3); margin-top:4px; max-width:300px;}
+  .int-meta{font-size:11.5px; color:var(--text-3); margin-top:12px;}
+
+  /* Config */
+  .config-section{margin-bottom:26px;}
+  .config-title{font-size:13.5px; font-weight:600; margin-bottom:4px;}
+  .config-desc{font-size:12.5px; color:var(--text-3); margin-bottom:14px;}
+  .user-row{display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px;}
+  .user-row:last-child{border-bottom:none;}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--surface-2); border:1px solid var(--line); display:flex;align-items:center;justify-content:center; font-size:12px; font-weight:600; color:var(--text-2);}
+  .role-tag{font-size:11px; font-weight:600; padding:3px 9px; border-radius:12px; background:var(--surface-2); border:1px solid var(--line); color:var(--text-2); margin-left:auto;}
+
+  .table-shell{border:1px solid rgba(255,255,255,0.07); border-radius:14px; overflow:hidden; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 10px 32px rgba(0,0,0,0.28);}
+  .table-shell .data-table{border:none; border-radius:0;}
+  .table-head-bar{display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.06);}
+  .table-foot{display:flex; justify-content:space-between; padding:12px 20px; font-size:12px; color:var(--text-3); border-top:1px solid var(--line-soft); background:var(--surface);}
+
+  /* Date filter (compartilhado) */
+  .date-filter{position:relative;}
+  .date-btn{display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.05); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.09); color:var(--text); font-size:13px; font-weight:500; padding:8px 13px; border-radius:9px; cursor:pointer; font-family:'Inter';}
+  .date-btn svg{width:14px;height:14px;stroke:var(--text-2);fill:none;stroke-width:1.6;}
+  .chev{width:12px;height:12px;stroke:var(--text-3);}
+  .date-panel{display:none; position:absolute; top:calc(100% + 6px); right:0; z-index:50; background:rgba(23,23,31,0.85); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; width:290px; box-shadow:0 24px 60px rgba(0,0,0,.6);}
+  .date-panel.open{display:block;}
+  .date-presets{display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:12px;}
+  .date-preset{padding:7px 10px; font-size:12.5px; border-radius:6px; color:var(--text-2); cursor:pointer; font-weight:500;}
+  .date-preset:hover,.date-preset.selected{background:var(--surface); color:var(--text);}
+  .date-label{font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-3); margin:10px 0 7px; font-weight:600;}
+  .month-year-row{display:grid; grid-template-columns:1.3fr 1fr; gap:6px; margin-bottom:8px;}
+  .date-select,.date-input{background:var(--bg); border:1px solid var(--line); color:var(--text); font-size:12.5px; padding:7px 9px; border-radius:6px; font-family:'Inter'; width:100%;}
+  .custom-range-row{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;}
+  .date-apply{width:100%; background:var(--text); color:var(--bg); border:none; padding:8px; border-radius:6px; font-weight:600; font-size:12.5px; cursor:pointer; font-family:'Inter';}
+  .date-apply.ghost{background:transparent; color:var(--text-2); border:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand"><span class="brand-mark">W</span>WPP Campanhas</div>
+
+    <div class="nav-label">Visão geral</div>
+    <div class="nav-item" data-page="desempenho"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Desempenho</div>
+
+    <div class="nav-label">Campanhas</div>
+    <div class="nav-item" data-page="segmentos"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3 3-4.5 5.5-4.5S13.7 16 14.5 19"/><path d="M16 8h5M16 12h5M16 16h3"/></svg>Segmentos e leads</div>
+    <div class="nav-item" data-page="criar"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Criar campanha</div>
+    <div class="nav-item" data-page="campanhas"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Campanhas</div>
+
+    <div class="nav-label">Inteligência</div>
+    <div class="nav-item" data-page="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Radar de Conversões</div>
+
+    <div class="nav-label">Sistema</div>
+    <div class="nav-item" data-page="integracoes"><svg viewBox="0 0 24 24"><path d="M8 3v4M16 3v4M8 17v4M16 17v4M3 8h4M3 16h4M17 8h4M17 16h4"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>Integrações</div>
+    <div class="nav-item" data-page="config"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Configurações</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center;">
+        <h1 id="pageTitle">Desempenho</h1>
+        <span class="live-tag"><span class="live-dot"></span>Sincronizado há 2 min</span>
+      </div>
+      <div class="date-filter">
+        <button class="date-btn" onclick="toggleDatePanel(event)">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          <span id="dateFilterLabel">Últimos 7 dias</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="date-panel" id="datePanel" onclick="event.stopPropagation()">
+          <div class="date-presets">
+            <div class="date-preset" onclick="selectPreset(this,'Hoje')">Hoje</div>
+            <div class="date-preset" onclick="selectPreset(this,'Ontem')">Ontem</div>
+            <div class="date-preset selected" onclick="selectPreset(this,'Últimos 7 dias')">Últimos 7 dias</div>
+            <div class="date-preset" onclick="selectPreset(this,'Últimos 30 dias')">Últimos 30 dias</div>
+            <div class="date-preset" onclick="selectPreset(this,'Este mês')">Este mês</div>
+            <div class="date-preset" onclick="selectPreset(this,'Mês passado')">Mês passado</div>
+          </div>
+          <div class="date-label">Mês e ano</div>
+          <div class="month-year-row">
+            <select class="date-select" id="monthSelect"><option>Janeiro</option><option>Fevereiro</option><option>Março</option><option>Abril</option><option>Maio</option><option>Junho</option><option>Julho</option><option selected>Agosto</option><option>Setembro</option><option>Outubro</option><option>Novembro</option><option>Dezembro</option></select>
+            <select class="date-select" id="yearSelect"><option>2024</option><option>2025</option><option selected>2026</option></select>
+          </div>
+          <button class="date-apply ghost" onclick="applyMonthYear()" style="margin-bottom:4px;">Aplicar mês inteiro</button>
+          <div class="date-label">Período personalizado</div>
+          <div class="custom-range-row">
+            <input type="date" class="date-input" id="dateFrom" value="2026-08-22">
+            <input type="date" class="date-input" id="dateTo" value="2026-08-28">
+          </div>
+          <button class="date-apply" onclick="applyCustomRange()">Aplicar período</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ========= DESEMPENHO ========= -->
+      <div class="page" id="page-desempenho">
+        <div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Mensagens enviadas</div><div class="kpi-value num">4.218</div><div class="kpi-sub"><span class="pos">+8%</span> vs. período anterior</div></div>
+          <div class="kpi-card"><div class="kpi-label">Taxa de entrega</div><div class="kpi-value num">97,2%</div><div class="kpi-sub num">118 falhas</div></div>
+          <div class="kpi-card"><div class="kpi-label">Taxa de leitura</div><div class="kpi-value num">64,8%</div><div class="kpi-sub num">2.733 leituras</div></div>
+          <div class="kpi-card"><div class="kpi-label">Custo do período</div><div class="kpi-value num">R$ 2,4 mil</div><div class="kpi-sub num">R$ 0,57 por mensagem</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Mensagens por dia<span>enviadas · entregues · lidas</span></div></div>
+            <div class="chart-wrap"><canvas id="chartMsgs"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Saúde do número</div></div>
+            <div class="health-row"><span>Qualidade (Meta)</span><span class="status-txt st-ok">Alta</span></div>
+            <div class="health-row"><span>Tier de envio</span><span class="num" style="font-weight:600;">10 mil/dia</span></div>
+            <div class="health-row"><span>Uso do tier hoje</span><span class="num" style="color:var(--text-2);">1.204 · 12%</span></div>
+            <div class="health-row"><span>Status do template ativo</span><span class="status-txt st-ok">Aprovado</span></div>
+            <div class="health-row"><span>Última verificação</span><span style="color:var(--text-3); font-size:12.5px;">há 20 min</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Alertas</div></div>
+          <div class="health-row"><span class="status-txt st-warn">Campanha "Follow-up Diagnóstico" com taxa de falha acima de 5%</span><a style="color:var(--text-2); font-size:12.5px; cursor:pointer;">Ver campanha →</a></div>
+          <div class="health-row"><span class="status-txt st-neutral">Template "wpp_oferta_supplytex" aguardando aprovação da Meta há 2 dias</span><a style="color:var(--text-2); font-size:12.5px; cursor:pointer;">Ver template →</a></div>
+        </div>
+      </div>
+
+      <!-- ========= SEGMENTOS ========= -->
+      <div class="page" id="page-segmentos">
+        <div style="display:flex; justify-content:space-between; margin-bottom:18px;">
+          <div class="tabs" style="margin-bottom:0;">
+            <div class="tab active">Segmentos</div>
+            <div class="tab">Todos os leads</div>
+          </div>
+          <button class="btn primary">+ Novo segmento</button>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Segmento</th><th>Fonte</th><th class="r">Leads</th><th>Sincronização</th><th class="r">Última atualização</th><th></th></tr></thead>
+          <tbody>
+            <tr class="rowlink">
+              <td><div class="row-title">Funil Diagnóstico — Estágio BASE</div><div class="row-sub">Pipeline Funil Diagnóstico · estágio BASE</div></td>
+              <td><span class="status-txt st-neutral">RD CRM</span></td>
+              <td class="r cell-num num">1.412</td>
+              <td><span class="status-txt st-ok">A cada 2h</span></td>
+              <td class="r row-sub">há 43 min</td><td class="arrow-cell">›</td>
+            </tr>
+            <tr class="rowlink">
+              <td><div class="row-title">Lead Diagnóstico</div><div class="row-sub">Tag diagnostico-confeccao-lead</div></td>
+              <td><span class="status-txt st-neutral">RD Marketing</span></td>
+              <td class="r cell-num num">2.874</td>
+              <td><span class="status-txt st-ok">Tempo real (webhook)</span></td>
+              <td class="r row-sub">há 4 min</td><td class="arrow-cell">›</td>
+            </tr>
+            <tr class="rowlink">
+              <td><div class="row-title">Clientes Supplytex 2025</div><div class="row-sub">Importação manual · CSV</div></td>
+              <td><span class="status-txt st-neutral">Manual</span></td>
+              <td class="r cell-num num">386</td>
+              <td><span class="status-txt st-neutral">Estático</span></td>
+              <td class="r row-sub">12/08/2026</td><td class="arrow-cell">›</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ========= CRIAR CAMPANHA ========= -->
+      <div class="page" id="page-criar">
+        <div class="form-grid">
+          <div>
+            <div class="panel" style="margin-bottom:14px;">
+              <div class="panel-head"><div class="panel-title">1 · Identificação</div></div>
+              <div class="field"><label>Nome da campanha</label><input class="input" value="Reativação Base Fria — Segredos"></div>
+              <div class="field"><label>Segmentos</label>
+                <div class="seg-option"><input type="checkbox" checked>Funil Diagnóstico — Estágio BASE<span class="cnt num">1.412 leads</span></div>
+                <div class="seg-option"><input type="checkbox">Lead Diagnóstico<span class="cnt num">2.874 leads</span></div>
+                <div class="seg-option"><input type="checkbox" checked>Clientes Supplytex 2025<span class="cnt num">386 leads</span></div>
+                <div class="hint num">1.798 leads selecionados · duplicados removidos automaticamente</div>
+              </div>
+            </div>
+
+            <div class="panel" style="margin-bottom:14px;">
+              <div class="panel-head"><div class="panel-title">2 · Mensagem<span>template aprovado pela Meta</span></div></div>
+              <div class="field"><label>Template</label>
+                <select class="input"><option>wpp_teste_motor_disparo · UTILITY · pt_BR</option><option>wpp_oferta_supplytex · MARKETING · pt_BR (pendente)</option></select>
+              </div>
+              <div class="field"><label>Corpo da mensagem</label>
+                <textarea class="input">Olá {{nome}}! Vimos que você demonstrou interesse em profissionalizar sua confecção. Temos uma condição especial esta semana — posso te contar mais?</textarea>
+                <div class="var-chips">
+                  <span class="var-chip">{{nome}}</span><span class="var-chip">{{empresa}}</span><span class="var-chip">{{cidade}}</span><span class="var-chip">{{produto_interesse}}</span>
+                </div>
+              </div>
+              <div class="field"><label>Teste A/B</label>
+                <div class="seg-option"><input type="checkbox" checked>Ativar variante B<span class="cnt">50% / 50%</span></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">3 · Agendamento</div></div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="field"><label>Modo de disparo</label><select class="input"><option>Agendado</option><option>Manual (disparar agora)</option></select></div>
+                <div class="field"><label>Data e hora</label><input type="datetime-local" class="input" value="2026-08-29T09:00"></div>
+              </div>
+              <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:6px;">
+                <button class="btn">Salvar rascunho</button>
+                <button class="btn primary">Colocar na fila</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel" style="margin-bottom:14px;">
+              <div class="panel-head"><div class="panel-title">Preview</div></div>
+              <div class="preview-phone">
+                <div class="bubble">Olá <b>Rayena</b>! Vimos que você demonstrou interesse em profissionalizar sua confecção. Temos uma condição especial esta semana — posso te contar mais?<small>09:00 ✓✓</small></div>
+              </div>
+              <div class="hint">Variáveis preenchidas com o primeiro lead do segmento.</div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Verificações</div></div>
+              <div class="health-row"><span>Template aprovado</span><span class="status-txt st-ok">Sim</span></div>
+              <div class="health-row"><span>Qualidade do número</span><span class="status-txt st-ok">Alta</span></div>
+              <div class="health-row"><span>Tier disponível hoje</span><span class="num" style="color:var(--text-2);">8.796</span></div>
+              <div class="health-row"><span>Leads sem telefone válido</span><span class="status-txt st-warn num">23 ignorados</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========= CAMPANHAS ========= -->
+      <div class="page" id="page-campanhas">
+        <div style="display:flex; justify-content:space-between; margin-bottom:18px;">
+          <div class="tabs" style="margin-bottom:0;">
+            <div class="tab active">Todas</div><div class="tab">Em andamento</div><div class="tab">Agendadas</div><div class="tab">Concluídas</div>
+          </div>
+          <button class="btn primary">+ Nova campanha</button>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Campanha</th><th>Status</th><th class="r">Leads</th><th class="r">Enviadas</th><th class="r">Entregues</th><th class="r">Lidas</th><th class="r">Custo</th><th></th></tr></thead>
+          <tbody>
+            <tr class="rowlink">
+              <td><div class="row-title">Reativação Base Fria — Segredos</div><div class="row-sub">Agendada · 29/08 às 09:00</div></td>
+              <td><span class="status-txt st-neutral">Agendada</span></td>
+              <td class="r cell-num num">1.798</td><td class="r num">—</td><td class="r num">—</td><td class="r num">—</td><td class="r num">—</td><td class="arrow-cell">›</td>
+            </tr>
+            <tr class="rowlink">
+              <td><div class="row-title">Follow-up Diagnóstico Concluído</div><div class="row-sub">Iniciada há 2h</div></td>
+              <td><span class="status-txt st-warn">Em andamento</span></td>
+              <td class="r cell-num num">640</td><td class="r num">412</td><td class="r num">395</td><td class="r num">248</td><td class="r num">R$ 236</td><td class="arrow-cell">›</td>
+            </tr>
+            <tr class="rowlink">
+              <td><div class="row-title">Carrinho Abandonado — Supplytex</div><div class="row-sub">Concluída em 26/08</div></td>
+              <td><span class="status-txt st-ok">Concluída</span></td>
+              <td class="r cell-num num">112</td><td class="r num">112</td><td class="r num">109</td><td class="r num">74</td><td class="r num">R$ 64</td><td class="arrow-cell">›</td>
+            </tr>
+            <tr class="rowlink">
+              <td><div class="row-title">Teste Motor de Disparo</div><div class="row-sub">Aguardando aprovação de template</div></td>
+              <td><span class="status-txt st-neutral">Pronta para disparo</span></td>
+              <td class="r cell-num num">1</td><td class="r num">—</td><td class="r num">—</td><td class="r num">—</td><td class="r num">—</td><td class="arrow-cell">›</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ========= RADAR ========= -->
+      <div class="page" id="page-radar">
+        <div class="tabs">
+          <div class="tab active" data-rtab="geral">Visão geral</div>
+          <div class="tab" data-rtab="campanha">Por campanha</div>
+          <div class="tab" data-rtab="funil">Por funil</div>
+        </div>
+
+        <div class="rview" id="rview-geral">
+          <div class="kpi-row">
+            <div class="kpi-card"><div class="kpi-label"><span class="base-mark"></span>Leads gerados</div><div class="kpi-value num">1.842</div><div class="kpi-sub"><span class="pos">+12%</span> vs. semana anterior</div></div>
+            <div class="kpi-card"><div class="kpi-label">Fechados</div><div class="kpi-value num">92</div><div class="kpi-sub">5,0% dos leads gerados</div></div>
+            <div class="kpi-card"><div class="kpi-label">Gasto total</div><div class="kpi-value num">R$ 38,7 mil</div><div class="kpi-sub num">CPL R$ 21,01 · ROAS 5,5x</div></div>
+            <div class="kpi-card"><div class="kpi-label">Receita rastreada</div><div class="kpi-value num" style="color:var(--gold);">R$ 214,6 mil</div><div class="kpi-sub">enviada ao Pixel via Purchase</div></div>
+          </div>
+          <div class="grid-2">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Leads gerados por dia</div><span class="event-chip ev-lead">Lead</span></div>
+              <div class="chart-wrap"><canvas id="chartLeads"></canvas></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Leads por funil</div></div>
+              <div class="funnel-list">
+                <div class="funnel-row"><div class="flabel"><b>Segredos da Confecção</b><span class="num">612</span></div><div class="bartrack"><div class="barfill" style="width:100%;"></div></div></div>
+                <div class="funnel-row"><div class="flabel"><b>Imersão Paraguai</b><span class="num">471</span></div><div class="bartrack"><div class="barfill" style="width:77%;"></div></div></div>
+                <div class="funnel-row"><div class="flabel"><b>Funil Diagnóstico</b><span class="num">398</span></div><div class="bartrack"><div class="barfill" style="width:65%;"></div></div></div>
+                <div class="funnel-row"><div class="flabel"><b>Supplytex</b><span class="num">361</span></div><div class="bartrack"><div class="barfill" style="width:59%;"></div></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Funil de conversão<span>% sobre leads gerados</span></div></div>
+            <div class="conv-funnel">
+              <div class="conv-step"><div class="step-name">Leads gerados<small>Lead</small></div><div class="conv-track"><div class="conv-fill" style="width:100%;"></div></div><div class="conv-nums"><span class="conv-abs num">1.842</span><span class="conv-rel num">100%</span></div></div>
+              <div class="conv-step"><div class="step-name">Identificação de Interesse<small>CompleteRegistration</small></div><div class="conv-track"><div class="conv-fill" style="width:57%; opacity:.8;"></div></div><div class="conv-nums"><span class="conv-abs num">1.049</span><span class="conv-rel num">57,0%</span></div></div>
+              <div class="conv-step"><div class="step-name">Reunião<small>Schedule</small></div><div class="conv-track"><div class="conv-fill" style="width:15.4%; opacity:.65;"></div></div><div class="conv-nums"><span class="conv-abs num">284</span><span class="conv-rel num">15,4%</span></div></div>
+              <div class="conv-step"><div class="step-name">Negociação<small>InitiateCheckout</small></div><div class="conv-track"><div class="conv-fill" style="width:9.7%; opacity:.5;"></div></div><div class="conv-nums"><span class="conv-abs num">179</span><span class="conv-rel num">9,7%</span></div></div>
+              <div class="conv-step"><div class="step-name">Fechado<small>Purchase</small></div><div class="conv-track"><div class="conv-fill" style="width:5%; background:var(--gold);"></div></div><div class="conv-nums"><span class="conv-abs num" style="color:var(--gold);">92</span><span class="conv-rel num">5,0%</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rview" id="rview-campanha" style="display:none;">
+          <div class="subtabs">
+            <div class="subtab active" data-rsub="wpp">Campanhas de WhatsApp</div>
+            <div class="subtab" data-rsub="ads">Campanhas Meta Ads</div>
+          </div>
+          <div id="rsub-wpp">
+            <table class="data-table">
+              <thead><tr><th>Campanha</th><th class="r">Leads</th><th class="r">Fechados</th><th class="r">Gasto</th><th class="r">CPL</th><th class="r">Receita</th><th class="r">ROAS</th><th></th></tr></thead>
+              <tbody>
+                <tr class="rowlink"><td><div class="row-title">Reativação Base Fria — Segredos</div><div class="row-sub">Disparo em massa · concluída</div></td><td class="r cell-num num">340</td><td class="r cell-num num">21</td><td class="r num">R$ 3,1 mil</td><td class="r num">R$ 9,12</td><td class="r cell-gold num">R$ 48,2 mil</td><td class="r cell-num num">15,5x</td><td class="arrow-cell">›</td></tr>
+                <tr class="rowlink"><td><div class="row-title">Follow-up Diagnóstico Concluído</div><div class="row-sub">Em andamento</div></td><td class="r cell-num num">198</td><td class="r cell-num num">12</td><td class="r num">R$ 1,8 mil</td><td class="r num">R$ 9,09</td><td class="r cell-gold num">R$ 26,4 mil</td><td class="r cell-num num">14,7x</td><td class="arrow-cell">›</td></tr>
+                <tr class="rowlink"><td><div class="row-title">Carrinho Abandonado — Supplytex</div><div class="row-sub">Concluída</div></td><td class="r cell-num num">112</td><td class="r cell-num num">7</td><td class="r num">R$ 940</td><td class="r num">R$ 8,39</td><td class="r cell-gold num">R$ 11,9 mil</td><td class="r cell-num num">12,7x</td><td class="arrow-cell">›</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="rsub-ads" style="display:none;">
+            <table class="data-table">
+              <thead><tr><th>Campanha (Meta Ads)</th><th class="r">Leads</th><th class="r">Fechados</th><th class="r">Gasto</th><th class="r">CPL</th><th class="r">Receita</th><th class="r">ROAS</th><th></th></tr></thead>
+              <tbody>
+                <tr class="rowlink"><td><div class="row-title">SC | C012 | Cadastro | ABO | LP V4</div><div class="row-sub">Segredos · ativa</div></td><td class="r cell-num num">521</td><td class="r cell-num num">29</td><td class="r num">R$ 12,4 mil</td><td class="r num">R$ 23,80</td><td class="r cell-gold num">R$ 71,3 mil</td><td class="r cell-num num">5,8x</td><td class="arrow-cell">›</td></tr>
+                <tr class="rowlink"><td><div class="row-title">PY | C004 | Interesse | ABO | Instagram</div><div class="row-sub">Paraguai · ativa</div></td><td class="r cell-num num">389</td><td class="r cell-num num">18</td><td class="r num">R$ 9,7 mil</td><td class="r num">R$ 24,94</td><td class="r cell-gold num">R$ 39,8 mil</td><td class="r cell-num num">4,1x</td><td class="arrow-cell">›</td></tr>
+                <tr class="rowlink"><td><div class="row-title">DIAG | C001 | Formulário Meta</div><div class="row-sub">Diagnóstico · ativa</div></td><td class="r cell-num num">398</td><td class="r cell-num num">9</td><td class="r num">R$ 8,2 mil</td><td class="r num">R$ 20,60</td><td class="r cell-gold num">R$ 14,1 mil</td><td class="r cell-num num">1,7x</td><td class="arrow-cell">›</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rview" id="rview-funil" style="display:none;">
+          <table class="data-table">
+            <thead><tr><th>Funil (RD CRM)</th><th class="r">Leads</th><th class="r">Fechados</th><th class="r">Gasto</th><th class="r">CPL</th><th class="r">Receita</th><th class="r">ROAS</th><th></th></tr></thead>
+            <tbody>
+              <tr class="rowlink"><td><div class="row-title">Segredos da Confecção</div><div class="row-sub">Pixel 2078737449416859</div></td><td class="r cell-num num">612</td><td class="r cell-num num">34</td><td class="r num">R$ 14,8 mil</td><td class="r num">R$ 24,18</td><td class="r cell-gold num">R$ 89,1 mil</td><td class="r cell-num num">6,0x</td><td class="arrow-cell">›</td></tr>
+              <tr class="rowlink"><td><div class="row-title">Imersão Paraguai</div><div class="row-sub">Pixel 1012804927965896</div></td><td class="r cell-num num">471</td><td class="r cell-num num">24</td><td class="r num">R$ 10,3 mil</td><td class="r num">R$ 21,87</td><td class="r cell-gold num">R$ 58,4 mil</td><td class="r cell-num num">5,7x</td><td class="arrow-cell">›</td></tr>
+              <tr class="rowlink"><td><div class="row-title">Funil Diagnóstico</div><div class="row-sub">Pixel 2006103380028816</div></td><td class="r cell-num num">398</td><td class="r num">—</td><td class="r num">R$ 8,2 mil</td><td class="r num">R$ 20,60</td><td class="r num">—</td><td class="r num">—</td><td class="arrow-cell">›</td></tr>
+              <tr class="rowlink"><td><div class="row-title">Supplytex</div><div class="row-sub">Pixel 961390553583140</div></td><td class="r cell-num num">361</td><td class="r cell-num num">34</td><td class="r num">R$ 5,4 mil</td><td class="r num">R$ 14,96</td><td class="r cell-gold num">R$ 67,1 mil</td><td class="r cell-num num">12,4x</td><td class="arrow-cell">›</td></tr>
+              <tr style="color:var(--text-3);"><td><div class="row-title" style="color:var(--text-3);">Europa · China · C$ Club</div><div class="row-sub">Aguardando compartilhamento dos pixels</div></td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ========= INTEGRAÇÕES ========= -->
+      <div class="page" id="page-integracoes">
+        <div class="int-grid">
+          <div class="int-card">
+            <div><div class="int-name">RD Station CRM</div><div class="int-desc">Sincronização de negócios, pipelines e webhooks de mudança de estágio.</div><div class="int-meta">Último evento recebido há 4 min</div></div>
+            <span class="status-txt st-ok">Conectado</span>
+          </div>
+          <div class="int-card">
+            <div><div class="int-name">RD Station Marketing</div><div class="int-desc">Leads por tag via webhook e envio de conversões.</div><div class="int-meta">Último evento recebido há 12 min</div></div>
+            <span class="status-txt st-ok">Conectado</span>
+          </div>
+          <div class="int-card">
+            <div><div class="int-name">WhatsApp Cloud API</div><div class="int-desc">Envio de templates, status de mensagem e saúde do número +55 11 99774-1514.</div><div class="int-meta">Qualidade alta · tier 10 mil/dia</div></div>
+            <span class="status-txt st-ok">Conectado</span>
+          </div>
+          <div class="int-card">
+            <div><div class="int-name">Meta Conversions API</div><div class="int-desc">Eventos de conversão por mudança de estágio (Radar de Conversões). 4 pixels ativos, 3 aguardando.</div><div class="int-meta">Último evento enviado há 2 min</div></div>
+            <span class="status-txt st-ok">Conectado</span>
+          </div>
+          <div class="int-card">
+            <div><div class="int-name">Meta Ads Insights</div><div class="int-desc">Gasto por campanha para cálculo de CPL e ROAS.</div><div class="int-meta">Sincroniza a cada 6h</div></div>
+            <span class="status-txt st-warn">Configurar</span>
+          </div>
+          <div class="int-card">
+            <div><div class="int-name">N8N</div><div class="int-desc">Motor de automações: sincronização, disparo e captura de webhooks.</div><div class="int-meta">7 workflows ativos</div></div>
+            <span class="status-txt st-ok">Operacional</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========= CONFIGURAÇÕES ========= -->
+      <div class="page" id="page-config">
+        <div class="grid-2" style="grid-template-columns:1fr 1fr;">
+          <div class="panel">
+            <div class="config-section" style="margin-bottom:0;">
+              <div class="config-title">Usuários</div>
+              <div class="config-desc">Quem pode acessar o app e com qual papel.</div>
+              <div class="user-row"><span class="avatar">RK</span><div><div>Rayena Koana</div><div class="row-sub">rayena@costurandosucesso.com</div></div><span class="role-tag">Admin</span></div>
+              <div class="user-row"><span class="avatar">MD</span><div><div>Mariana Dalmaso</div><div class="row-sub">mariana@costurandosucesso.com</div></div><span class="role-tag">Marketing</span></div>
+              <div class="user-row"><span class="avatar">LE</span><div><div>Leiryne</div><div class="row-sub">leirynecomercial@gmail.com</div></div><span class="role-tag">Marketing</span></div>
+              <button class="btn" style="margin-top:14px;">+ Convidar usuário</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="config-section">
+              <div class="config-title">Número de WhatsApp</div>
+              <div class="config-desc">Número conectado à Cloud API para os disparos.</div>
+              <div class="health-row"><span>Número</span><span class="num" style="font-weight:600;">+55 11 99774-1514</span></div>
+              <div class="health-row"><span>WABA ID</span><span class="row-sub num">2130870377837125</span></div>
+              <div class="health-row"><span>Registro</span><span class="status-txt st-ok">Ativo</span></div>
+            </div>
+            <div class="config-section" style="margin-bottom:0;">
+              <div class="config-title">Preferências</div>
+              <div class="health-row"><span>Tema</span><span style="color:var(--text-2); font-size:12.5px;">Escuro</span></div>
+              <div class="health-row"><span>Fuso horário</span><span style="color:var(--text-2); font-size:12.5px;">America/Sao_Paulo</span></div>
+              <div class="health-row"><span>Sessão</span><a style="color:var(--red); font-size:12.5px; cursor:pointer;">Encerrar sessão</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // Navegação principal
+  const titles = {desempenho:'Desempenho', segmentos:'Segmentos e leads', criar:'Criar campanha', campanhas:'Campanhas', radar:'Radar de Conversões', integracoes:'Integrações', config:'Configurações'};
+  document.querySelectorAll('.nav-item[data-page]').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+      item.classList.add('active');
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.getElementById('page-'+item.dataset.page).classList.add('active');
+      document.getElementById('pageTitle').textContent = titles[item.dataset.page];
+    });
+  });
+  document.querySelector('.nav-item[data-page="desempenho"]').classList.add('active');
+  document.getElementById('page-desempenho').classList.add('active');
+
+  // Tabs internas do Radar
+  document.querySelectorAll('[data-rtab]').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-rtab]').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.rview').forEach(v=>v.style.display='none');
+      document.getElementById('rview-'+tab.dataset.rtab).style.display='block';
+    });
+  });
+  document.querySelectorAll('[data-rsub]').forEach(st=>{
+    st.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-rsub]').forEach(s=>s.classList.remove('active'));
+      st.classList.add('active');
+      document.getElementById('rsub-wpp').style.display = st.dataset.rsub==='wpp'?'block':'none';
+      document.getElementById('rsub-ads').style.display = st.dataset.rsub==='ads'?'block':'none';
+    });
+  });
+
+  // Filtro de período
+  function toggleDatePanel(e){ e.stopPropagation(); document.getElementById('datePanel').classList.toggle('open'); }
+  document.addEventListener('click', ()=>{ document.getElementById('datePanel').classList.remove('open'); });
+  function selectPreset(el,label){
+    document.querySelectorAll('.date-preset').forEach(p=>p.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('dateFilterLabel').textContent = label;
+    document.getElementById('datePanel').classList.remove('open');
+  }
+  function applyMonthYear(){
+    const m=document.getElementById('monthSelect').value, y=document.getElementById('yearSelect').value;
+    document.getElementById('dateFilterLabel').textContent = m+' de '+y;
+    document.getElementById('datePanel').classList.remove('open');
+  }
+  function applyCustomRange(){
+    const f=document.getElementById('dateFrom').value.split('-').reverse().slice(0,2).join('/');
+    const t=document.getElementById('dateTo').value.split('-').reverse().slice(0,2).join('/');
+    document.getElementById('dateFilterLabel').textContent = f+' – '+t;
+    document.getElementById('datePanel').classList.remove('open');
+  }
+
+  // Charts
+  const lineOpts = {responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+    scales:{ x:{grid:{display:false}, border:{color:'#232330'}, ticks:{color:'#5C5C70', font:{family:'Inter', size:11}}},
+             y:{grid:{color:'rgba(255,255,255,0.04)'}, border:{display:false}, ticks:{color:'#5C5C70', font:{family:'Inter', size:11}, maxTicksLimit:5}} }};
+  function grad(ctx,color){ const g=ctx.createLinearGradient(0,0,0,190); g.addColorStop(0,color); g.addColorStop(1,'rgba(0,0,0,0)'); return g; }
+
+  new Chart(document.getElementById('chartMsgs'), { type:'line',
+    data:{ labels:['22','23','24','25','26','27','28 ago'],
+      datasets:[
+        { data:[520,610,588,640,602,720,538], borderColor:'#E8192C', borderWidth:2, backgroundColor:(c)=>grad(c.chart.ctx,'rgba(232,25,44,0.12)'), fill:true, tension:.3, pointRadius:0 },
+        { data:[500,592,570,618,585,700,520], borderColor:'#8F8FA3', borderWidth:1.5, fill:false, tension:.3, pointRadius:0 },
+        { data:[320,395,362,410,388,470,340], borderColor:'#C9A017', borderWidth:1.5, fill:false, tension:.3, pointRadius:0 }
+      ]}, options:lineOpts });
+
+  new Chart(document.getElementById('chartLeads'), { type:'line',
+    data:{ labels:['22','23','24','25','26','27','28 ago'],
+      datasets:[{ data:[228,251,239,268,257,304,295], borderColor:'#E8192C', borderWidth:2, backgroundColor:(c)=>grad(c.chart.ctx,'rgba(232,25,44,0.14)'), fill:true, tension:.3, pointRadius:0 }]},
+    options:lineOpts });
+</script>
+
+</body>
+</html>
