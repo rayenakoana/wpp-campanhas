@@ -1,0 +1,11 @@
+  wpp-campanhas:
+    build:
+      context: /opt/wpp-campanhas
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: https://syecwttpsvrmhdvinjmt.supabase.co
+        VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5ZWN3dHRwc3ZybWhkdmluam10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NTQ4MTMsImV4cCI6MjA5OTUzMDgxM30.2osuBGCX9yDCVfb_i0iQj2oQfVWsU77fswI0-gDhMwY
+    container_name: wpp-campanhas
+    restart: unless-stopped
+    networks:
+      - automacao
