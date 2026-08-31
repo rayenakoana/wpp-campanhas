@@ -7,7 +7,9 @@ export default function Radar() {
       </p>
 
       <div className="glass-card p-6 text-sm text-[var(--color-text-muted)]">
-        Conteudo desta pagina ainda sera conectado ao Supabase (schema wpp). Proxima etapa do desenvolvimento.
+        Esta página depende da sincronização de gasto do Meta Ads (Graph API), que ainda não foi implementada.
+        Assim que o workflow de sync de insights estiver em produção, o Gasto, CPL e ROAS por campanha e por funil
+        aparecerão aqui automaticamente.
       </div>
     </div>
   )
