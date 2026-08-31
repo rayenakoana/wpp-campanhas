@@ -36,3 +36,29 @@ export interface NumberHealthSnapshot {
   messaging_tier: string
   captured_at: string
 }
+
+export interface Segment {
+  id: string
+  name: string
+  source: string | null
+  source_ref: unknown
+  is_dynamic: boolean
+  contact_count: number | null
+  last_synced_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Lead {
+  id: string
+  rd_lead_uuid: string | null
+  rd_deal_id: string | null
+  name: string | null
+  whatsapp_e164: string | null
+  email: string | null
+  origin: string | null
+  custom_fields: unknown
+  created_at: string
+  updated_at: string
+}
