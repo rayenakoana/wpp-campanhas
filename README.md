@@ -4,22 +4,35 @@ Plataforma de disparo em massa de mensagens WhatsApp + rastreamento de conversõ
 
 ## Status
 
-Protótipo visual completo (v5) navegável em HTML estático, com identidade visual glassmorphism (preto/vermelho/dourado, Barlow Condensed).
+Frontend React em desenvolvimento (Vite + React + TypeScript + Tailwind), conectado ao Supabase (schema `wpp`, mesmo projeto do CS Dash). Backend de disparo (N8N + Supabase) já em produção.
 
-## Arquivos
+## Stack
 
-- `login.html` — tela de login (e-mail/senha + SSO Google Workspace), ponto de entrada do app
-- `wpp-campanhas-app-v5.html` — protótipo navegável completo: Desempenho, Segmentos e leads, Criar campanha, Campanhas, Radar de Conversões, Integrações, Configurações
+- Frontend: React 19 + TypeScript + Vite + Tailwind v4
+- Roteamento: React Router
+- Autenticação: Supabase Auth (projeto compartilhado com CS Dash), e-mail/senha + Google Workspace OAuth
+- Dados: Supabase, schema `wpp`
+- Backend de disparo: N8N (self-hosted) + WhatsApp Cloud API
 
-## Stack planejada
+## Estrutura
 
-- Frontend: React/TypeScript (a implementar, seguindo padrão do CS Dash)
-- Backend: N8N (automações) + Supabase (schema `wpp`, projeto compartilhado com CS Dash)
-- WhatsApp: Cloud API
-- Autenticação: Supabase Auth (reaproveitando o mesmo projeto do CS Dash)
+- `src/pages/Login.tsx` — tela de login
+- `src/pages/dashboard/` — páginas do app (Desempenho, Segmentos e leads, Criar campanha, Campanhas, Radar de Conversões, Integrações, Configurações)
+- `src/contexts/AuthContext.tsx` — autenticação
+- `src/lib/supabase.ts` — clientes Supabase (auth + schema wpp)
+- `prototype/` — protótipos HTML estáticos originais (referência visual, não usados em produção)
+
+## Rodando localmente
+
+```bash
+npm install
+cp .env.example .env   # preencher com URL e anon key do Supabase
+npm run dev
+```
 
 ## Próximos passos
 
-- Implementar frontend React conectado ao Supabase
-- Sync de insights do Meta Ads (Gasto/CPL/ROAS)
+- Conectar as páginas do dashboard aos dados reais do schema `wpp`
+- Sync de insights do Meta Ads (Gasto/CPL/ROAS) via N8N
 - Ativar pixels de funis pendentes (Europa, China, C$ Club)
+- Configurar forma de pagamento do WhatsApp Business (WABA)

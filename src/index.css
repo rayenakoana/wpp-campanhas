@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Paleta oficial WPP Campanhas / CS Dash */
+  --color-bg-base: #0D0D1A;
+  --color-red-bright: #E8192C;
+  --color-red-deep: #8a1520;
+  --color-gold: #C9A017;
+  --color-surface: #14141f;
+  --color-surface-glass: rgba(20, 20, 31, 0.6);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-text-primary: #F2F2F5;
+  --color-text-muted: #9A9AAC;
+
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+/* Glow ambiente vermelho animado, usado no fundo das telas principais */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(600px circle at 15% 20%, rgba(232, 25, 44, 0.10), transparent 60%),
+    radial-gradient(500px circle at 85% 75%, rgba(201, 160, 23, 0.06), transparent 60%);
+  animation: glow-pulse 12s ease-in-out infinite alternate;
+}
+
+@keyframes glow-pulse {
+  0%   { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-glow { animation: none; }
+}
+
+/* Cartao de vidro (glassmorphism) - elemento de assinatura visual do produto */
+.glass-card {
+  background: var(--color-surface-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-red-bright);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-red-deep);
+  color: white;
+}
