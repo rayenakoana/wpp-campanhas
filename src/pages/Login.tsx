@@ -61,9 +61,11 @@ export default function Login() {
 
       <div className="glass-card relative z-10 w-full max-w-[380px] px-8 pt-9 pb-7 shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
         <div className="flex items-center justify-center gap-2.5 mb-7">
-          <span className="w-8 h-8 rounded-lg flex items-center justify-center font-display font-extrabold text-[15px] text-white bg-gradient-to-br from-[var(--color-red-bright)] to-[var(--color-red-deep)]">
-            W
-          </span>
+          <img
+            src="/logo-cs.png"
+            alt="Costurando Sucesso"
+            className="w-8 h-8 rounded-lg object-cover"
+          />
           <span className="font-display font-bold text-[19px]">WPP Campanhas</span>
         </div>
 

@@ -67,9 +67,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       <aside className="relative z-10 w-[220px] flex-shrink-0 bg-[rgba(14,14,21,0.72)] backdrop-blur-xl border-r border-white/5 px-3 py-5 flex flex-col">
         <div className="flex items-center gap-2.5 px-2 mb-6 font-display font-semibold text-[15px]">
-          <span className="w-[22px] h-[22px] rounded-md bg-[var(--color-red-bright)] flex items-center justify-center text-[11px] font-extrabold text-white">
-            W
-          </span>
+          <img
+            src="/logo-cs.png"
+            alt="Costurando Sucesso"
+            className="w-[22px] h-[22px] rounded-md object-cover"
+          />
           WPP Campanhas
         </div>
 
