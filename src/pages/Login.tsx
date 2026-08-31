@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Login() {
-  const { signInWithPassword, signInWithGoogle } = useAuth()
+  const { signInWithPassword, signInWithGoogle, requestPasswordReset } = useAuth()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
@@ -11,6 +11,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [mensagemRecuperacao, setMensagemRecuperacao] = useState<string | null>(null)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -27,6 +28,24 @@ export default function Login() {
     }
 
     navigate('/', { replace: true })
+  }
+
+  async function handleForgotPassword() {
+    if (!email) {
+      setError('Digite seu e-mail no campo acima antes de clicar em "Esqueceu a senha?".')
+      return
+    }
+    setError(null)
+    setLoading(true)
+    const { error: resetError } = await requestPasswordReset(email)
+    setLoading(false)
+
+    if (resetError) {
+      setError(resetError)
+      return
+    }
+
+    setMensagemRecuperacao(`Enviamos um link de redefinição para ${email}. Verifique sua caixa de entrada.`)
   }
 
   async function handleGoogleLogin() {
@@ -58,6 +77,12 @@ export default function Login() {
         {error && (
           <div className="text-[12.5px] px-3 py-2.5 rounded-lg mb-4 bg-[rgba(232,25,44,0.1)] border border-[rgba(232,25,44,0.28)] text-[#f28c94]">
             {error}
+          </div>
+        )}
+
+        {mensagemRecuperacao && (
+          <div className="text-[12.5px] px-3 py-2.5 rounded-lg mb-4 bg-[rgba(61,190,123,0.1)] border border-[rgba(61,190,123,0.3)] text-[#8fe0b6]">
+            {mensagemRecuperacao}
           </div>
         )}
 
@@ -104,9 +129,13 @@ export default function Login() {
               />
               Lembrar de mim
             </label>
-            <a href="#" className="text-[12.5px] text-[var(--color-gold)] hover:underline">
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-[12.5px] text-[var(--color-gold)] hover:underline"
+            >
               Esqueceu a senha?
-            </a>
+            </button>
           </div>
 
           <button

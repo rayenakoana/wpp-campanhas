@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './components/AppLayout'
 import Login from './pages/Login'
+import RedefinirSenha from './pages/RedefinirSenha'
 import Desempenho from './pages/dashboard/Desempenho'
 import Segmentos from './pages/dashboard/Segmentos'
 import CriarCampanha from './pages/dashboard/CriarCampanha'
@@ -25,6 +26,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/redefinir-senha" element={<RedefinirSenha />} />
           <Route path="/" element={<Protegida><Desempenho /></Protegida>} />
           <Route path="/segmentos" element={<Protegida><Segmentos /></Protegida>} />
           <Route path="/criar-campanha" element={<Protegida><CriarCampanha /></Protegida>} />

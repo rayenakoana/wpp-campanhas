@@ -9,6 +9,8 @@ interface AuthContextValue {
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>
   signInWithGoogle: () => Promise<{ error: string | null }>
   signOut: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<{ error: string | null }>
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -51,6 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  async function requestPasswordReset(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    })
+    return { error: error ? traduzErroAuth(error.message) : null }
+  }
+
+  async function updatePassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    return { error: error ? traduzErroAuth(error.message) : null }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -60,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithPassword,
         signInWithGoogle,
         signOut,
+        requestPasswordReset,
+        updatePassword,
       }}
     >
       {children}
