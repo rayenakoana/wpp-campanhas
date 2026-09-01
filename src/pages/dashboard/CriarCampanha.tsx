@@ -179,6 +179,7 @@ export default function CriarCampanha() {
   const [abTest, setAbTest]                               = useState(false)
   const [varianteB, setVarianteB]                         = useState('')
   const [abSplit, setAbSplit]                             = useState(50)
+  const [abaAtiva, setAbaAtiva]                           = useState<'a' | 'b'>('a')
 
   const [salvando, setSalvando]                           = useState(false)
   const [salvandoRascunho, setSalvandoRascunho]           = useState(false)
@@ -403,22 +404,20 @@ export default function CriarCampanha() {
               </div>
             )}
 
-            {/* Mídia do template */}
-            <div className="field">
-              <label>Mídia do template</label>
-              <div style={{
-                border: '1.5px dashed var(--line)', borderRadius: 10, padding: 22,
-                textAlign: 'center', color: 'var(--text-3)', fontSize: 13, cursor: 'pointer',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-3)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
-              >
-                Arraste uma imagem ou vídeo aqui, ou{' '}
-                <b style={{ color: 'var(--gold)', fontWeight: 500 }}>selecione um arquivo</b>
-                <br />
-                <span style={{ fontSize: 11.5, marginTop: 4, display: 'block' }}>JPG, PNG ou MP4 · até 16 MB</span>
+            {/* Mídia do template — só aparece quando A/B desativado */}
+            {!abTest && (
+              <div className="field">
+                <label>Mídia do template</label>
+                <div style={{ border: '1.5px dashed var(--line)', borderRadius: 10, padding: 22, textAlign: 'center', color: 'var(--text-3)', fontSize: 13, cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-3)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}>
+                  Arraste uma imagem ou vídeo aqui, ou{' '}
+                  <b style={{ color: 'var(--gold)', fontWeight: 500 }}>selecione um arquivo</b>
+                  <br />
+                  <span style={{ fontSize: 11.5, marginTop: 4, display: 'block' }}>JPG, PNG ou MP4 · até 16 MB</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Teste A/B */}
             <div className="field">
@@ -443,48 +442,82 @@ export default function CriarCampanha() {
 
               {abTest && (
                 <>
-                  <div className="hint" style={{ marginBottom: 10 }}>
-                    Clique no campo que deseja editar antes de inserir uma variável.
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
-                    <div>
-                      <div style={{ fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--gold)', marginBottom: 8, fontWeight: 600 }}>
-                        Variante A
+                  {/* Abas A / B */}
+                  <div style={{ display: 'flex', gap: 0, marginBottom: 0, borderBottom: '1px solid var(--line-soft)' }}>
+                    {(['a', 'b'] as ('a' | 'b')[]).map(v => (
+                      <div key={v} onClick={() => { setAbaAtiva(v); focusTarget.current = v; lastRangeRef.current = null }}
+                        style={{
+                          padding: '7px 20px', cursor: 'pointer',
+                          color: abaAtiva === v ? 'var(--gold)' : 'var(--text-3)',
+                          borderBottom: abaAtiva === v ? '2px solid var(--gold)' : '2px solid transparent',
+                          marginBottom: -1, textTransform: 'uppercase', letterSpacing: '.06em', fontSize: '11.5px', fontWeight: 600,
+                        }}
+                      >
+                        Variante {v.toUpperCase()}
                       </div>
-                      <textarea
-                        ref={msgBodyRef}
-                        className="input" rows={4}
-                        value={mensagem}
-                        onChange={e => setMensagem(e.target.value)}
-                        onFocus={() => { focusTarget.current = 'a'; lastRangeRef.current = null }}
-                        onMouseUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
-                        onKeyUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
-                        onDragOver={e => { e.preventDefault(); (e.currentTarget as any).style.outline = '2px dashed var(--gold)' }}
-                        onDragLeave={e => { (e.currentTarget as any).style.outline = '' }}
-                        onDrop={e => { e.preventDefault(); (e.currentTarget as any).style.outline = ''; focusTarget.current = 'a'; inserirVariavel(e.dataTransfer.getData('text/plain')) }}
-                        placeholder="Texto da variante A..."
-                        style={{ borderColor: focusTarget.current === 'a' ? 'var(--red)' : undefined }}
-                      />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--gold)', marginBottom: 8, fontWeight: 600 }}>
-                        Variante B
-                      </div>
-                      <textarea
-                        ref={varBRef}
-                        className="input" rows={4}
-                        value={varianteB}
-                        onChange={e => setVarianteB(e.target.value)}
-                        onFocus={() => { focusTarget.current = 'b'; lastRangeRef.current = null }}
-                        onMouseUp={() => { const ta = varBRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
-                        onKeyUp={() => { const ta = varBRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
-                        onDragOver={e => { e.preventDefault(); (e.currentTarget as any).style.outline = '2px dashed var(--gold)' }}
-                        onDragLeave={e => { (e.currentTarget as any).style.outline = '' }}
-                        onDrop={e => { e.preventDefault(); (e.currentTarget as any).style.outline = ''; focusTarget.current = 'b'; lastRangeRef.current = null; inserirVariavel(e.dataTransfer.getData('text/plain')) }}
-                        placeholder="Texto alternativo para a variante B..."
-                      />
-                    </div>
+                    ))}
                   </div>
+
+                  {/* Conteúdo da aba ativa */}
+                  <div style={{ paddingTop: 14 }}>
+                    {abaAtiva === 'a' ? (
+                      <>
+                        <div className="field">
+                          <label>Texto — Variante A</label>
+                          <textarea
+                            ref={msgBodyRef}
+                            className="input" rows={5}
+                            value={mensagem}
+                            onChange={e => setMensagem(e.target.value)}
+                            onMouseUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                            onKeyUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                            onDragOver={e => { e.preventDefault(); (e.currentTarget as any).style.outline = '2px dashed var(--gold)' }}
+                            onDragLeave={e => { (e.currentTarget as any).style.outline = '' }}
+                            onDrop={e => { e.preventDefault(); (e.currentTarget as any).style.outline = ''; inserirVariavel(e.dataTransfer.getData('text/plain')) }}
+                            placeholder="Texto da variante A..."
+                          />
+                        </div>
+                        <div className="field">
+                          <label>Mídia — Variante A</label>
+                          <div style={{ border: '1.5px dashed var(--line)', borderRadius: 10, padding: 22, textAlign: 'center', color: 'var(--text-3)', fontSize: 13, cursor: 'pointer' }}
+                            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-3)')}
+                            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}>
+                            Arraste uma imagem ou vídeo aqui, ou <b style={{ color: 'var(--gold)', fontWeight: 500 }}>selecione um arquivo</b>
+                            <br /><span style={{ fontSize: 11.5, marginTop: 4, display: 'block' }}>JPG, PNG ou MP4 · até 16 MB</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="field">
+                          <label>Texto — Variante B</label>
+                          <textarea
+                            ref={varBRef}
+                            className="input" rows={5}
+                            value={varianteB}
+                            onChange={e => setVarianteB(e.target.value)}
+                            onMouseUp={() => { const ta = varBRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                            onKeyUp={() => { const ta = varBRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                            onDragOver={e => { e.preventDefault(); (e.currentTarget as any).style.outline = '2px dashed var(--gold)' }}
+                            onDragLeave={e => { (e.currentTarget as any).style.outline = '' }}
+                            onDrop={e => { e.preventDefault(); (e.currentTarget as any).style.outline = ''; inserirVariavel(e.dataTransfer.getData('text/plain')) }}
+                            placeholder="Texto alternativo para a variante B..."
+                          />
+                        </div>
+                        <div className="field">
+                          <label>Mídia — Variante B</label>
+                          <div style={{ border: '1.5px dashed var(--line)', borderRadius: 10, padding: 22, textAlign: 'center', color: 'var(--text-3)', fontSize: 13, cursor: 'pointer' }}
+                            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-3)')}
+                            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}>
+                            Arraste uma imagem ou vídeo aqui, ou <b style={{ color: 'var(--gold)', fontWeight: 500 }}>selecione um arquivo</b>
+                            <br /><span style={{ fontSize: 11.5, marginTop: 4, display: 'block' }}>JPG, PNG ou MP4 · até 16 MB</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div style={{ marginBottom: 10 }}></div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--text-2)' }}>
                     <span>Divisão do envio</span>
                     <input type="range" min={10} max={90} value={abSplit} onChange={e => setAbSplit(Number(e.target.value))}
