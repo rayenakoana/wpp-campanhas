@@ -47,7 +47,7 @@ function ModalConvite({ onClose, onConvidado }: { onClose: () => void; onConvida
       const res = await fetch(`${SUPABASE_URL}/auth/v1/invite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), redirect_to: 'https://wppcampanhas.costurandosucesso.com/redefinir-senha' }),
       })
       const json = await res.json()
       if (!res.ok) {
