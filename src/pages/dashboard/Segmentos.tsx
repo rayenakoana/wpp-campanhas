@@ -405,14 +405,12 @@ export default function Segmentos() {
   const [abaAtiva, setAbaAtiva] = useState<'segmentos' | 'leads'>('segmentos')
   const [segmentoDetalhe, setSegmentoDetalhe] = useState<Segment | null>(null)
   const [modalAberto, setModalAberto] = useState(false)
-  const [recarregar, setRecarregar] = useState(0)
 
   // Forçar reload dos segmentos após criar novo
   // (useSegmentos não tem refresh externo, então remont via key)
 
   function onSegmentoSalvo() {
     setModalAberto(false)
-    setRecarregar((n) => n + 1)
     // Reload simples via refresh de página não é ideal;
     // a solução é recarregar via window.location mas melhor usar um callback
     window.location.reload()
