@@ -15,8 +15,9 @@ export default function CriarCampanha() {
   const [templateId, setTemplateId] = useState('')
   const [segmentosSelecionados, setSegmentosSelecionados] = useState<string[]>([])
   const [mensagem, setMensagem] = useState('')
-  const [enviarAgora, setEnviarAgora] = useState(true)
-  const [dataAgendamento, setDataAgendamento] = useState('')
+  const [modoDisparo, setModoDisparo] = useState<'now' | 'scheduled'>('scheduled')
+  const [dataAgendamento, setDataAgendamento] = useState('2026-08-29T09:00')
+  const [abTest, setAbTest] = useState(false)
 
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -28,47 +29,34 @@ export default function CriarCampanha() {
     )
   }
 
+  const totalLeads = segmentos
+    .filter((s) => segmentosSelecionados.includes(s.id))
+    .reduce((acc, s) => acc + (s.contact_count ?? 0), 0)
+
+  const templateSelecionado = templates.find((t) => t.id === templateId) ?? null
+  const templatesAprovados = templates.filter((t) => t.status === 'APPROVED' || t.status === 'approved' || t.status === 'aprovado')
+
+  const previewTexto = mensagem
+    ? mensagem.replace(/\{\{nome\}\}/gi, 'Rayena').replace(/\{\{empresa\}\}/gi, 'CS').replace(/\{\{cidade\}\}/gi, 'SP')
+    : 'Olá <b>Rayena</b>! Vimos que você demonstrou interesse em profissionalizar sua confecção. Temos uma condição especial esta semana — posso te contar mais?'
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setErro(null)
-
-    if (!nome.trim()) {
-      setErro('Dê um nome para a campanha.')
-      return
-    }
-    if (!templateId) {
-      setErro('Selecione um template aprovado pela Meta.')
-      return
-    }
-    if (segmentosSelecionados.length === 0) {
-      setErro('Selecione ao menos um segmento de destino.')
-      return
-    }
-    if (!mensagem.trim()) {
-      setErro('Escreva o texto da mensagem.')
-      return
-    }
-    if (!enviarAgora && !dataAgendamento) {
-      setErro('Escolha uma data de agendamento ou marque "Enviar agora".')
-      return
-    }
+    if (!nome.trim()) { setErro('Dê um nome para a campanha.'); return }
+    if (!templateId) { setErro('Selecione um template aprovado pela Meta.'); return }
+    if (segmentosSelecionados.length === 0) { setErro('Selecione ao menos um segmento de destino.'); return }
+    if (!mensagem.trim()) { setErro('Escreva o texto da mensagem.'); return }
+    if (modoDisparo === 'scheduled' && !dataAgendamento) { setErro('Escolha uma data de agendamento.'); return }
 
     setSalvando(true)
-
     try {
-      const status = enviarAgora ? 'firing' : 'scheduled'
-      const scheduled_at = enviarAgora ? null : new Date(dataAgendamento).toISOString()
+      const status = modoDisparo === 'now' ? 'firing' : 'scheduled'
+      const scheduled_at = modoDisparo === 'now' ? null : new Date(dataAgendamento).toISOString()
 
       const { data: campanha, error: campanhaError } = await supabaseWpp
         .from('campaigns')
-        .insert({
-          name: nome.trim(),
-          template_id: templateId,
-          status,
-          scheduled_at,
-          ab_test_enabled: false,
-          created_by: user?.id ?? null,
-        })
+        .insert({ name: nome.trim(), template_id: templateId, status, scheduled_at, ab_test_enabled: abTest, created_by: user?.id ?? null })
         .select()
         .single()
 
@@ -79,13 +67,11 @@ export default function CriarCampanha() {
       const { error: segmentosError } = await supabaseWpp
         .from('campaign_segments')
         .insert(segmentosSelecionados.map((segment_id) => ({ campaign_id: campaignId, segment_id })))
-
       if (segmentosError) throw segmentosError
 
       const { error: variantError } = await supabaseWpp
         .from('campaign_variants')
         .insert({ campaign_id: campaignId, label: 'Principal', body: mensagem.trim() })
-
       if (variantError) throw variantError
 
       setSucesso(true)
@@ -97,138 +83,199 @@ export default function CriarCampanha() {
     }
   }
 
-  const templatesAprovados = templates.filter((t) => t.status === 'APPROVED' || t.status === 'aprovado')
-
   return (
-    <div className="max-w-2xl">
-      <h1 className="font-display font-semibold text-2xl mb-1">Criar campanha</h1>
-      <p className="text-sm text-[var(--color-text-muted)] mb-6">
-        Fluxo de criação de uma nova campanha de WhatsApp.
-      </p>
-
+    <div>
       {sucesso && (
-        <div className="glass-card p-4 mb-5 text-sm text-[#8fe0b6] bg-[rgba(61,190,123,0.1)] border-[rgba(61,190,123,0.3)]">
-          Campanha criada com sucesso! Redirecionando para a lista de campanhas...
+        <div className="panel" style={{ padding: 16, marginBottom: 16, fontSize: 13, color: '#8fe0b6', borderColor: 'rgba(61,190,123,0.3)', background: 'rgba(61,190,123,0.1)' }}>
+          Campanha criada com sucesso! Redirecionando...
         </div>
       )}
-
       {erro && (
-        <div className="glass-card p-4 mb-5 text-sm text-[#f28c94] bg-[rgba(232,25,44,0.1)] border-[rgba(232,25,44,0.3)]">
+        <div className="panel" style={{ padding: 16, marginBottom: 16, fontSize: 13, color: '#f28c94', borderColor: 'rgba(232,25,44,0.3)', background: 'rgba(232,25,44,0.1)' }}>
           {erro}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="glass-card p-6 flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="form-grid">
+        {/* Coluna esquerda */}
         <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1.5 font-medium">
-            Nome da campanha
-          </label>
-          <input
-            type="text"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Ex: Reativação Segredos da Confecção - Setembro"
-            className="w-full px-3.5 py-2.5 rounded-lg text-sm bg-white/5 border border-white/10 outline-none focus:border-[var(--color-red-bright)]"
-          />
-        </div>
+          {/* 1 — Identificação */}
+          <div className="panel" style={{ marginBottom: 14 }}>
+            <div className="panel-head">
+              <div className="panel-title">1 · Identificação</div>
+            </div>
 
-        <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1.5 font-medium">
-            Template aprovado (Meta)
-          </label>
-          {loadingTemplates ? (
-            <p className="text-sm text-[var(--color-text-muted)]">Carregando templates...</p>
-          ) : (
-            <select
-              value={templateId}
-              onChange={(e) => setTemplateId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg text-sm bg-white/5 border border-white/10 outline-none focus:border-[var(--color-red-bright)]"
-            >
-              <option value="">Selecione um template</option>
-              {templatesAprovados.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.meta_template_name} {t.category ? `(${t.category})` : ''}
-                </option>
-              ))}
-            </select>
-          )}
-          {!loadingTemplates && templatesAprovados.length === 0 && (
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">
-              Nenhum template aprovado encontrado. Sincronize os templates com a Meta antes de criar uma campanha.
-            </p>
-          )}
-        </div>
+            <div className="field">
+              <label>Nome da campanha</label>
+              <input
+                className="input"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Ex: Reativação Base Fria — Segredos"
+              />
+            </div>
 
-        <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1.5 font-medium">
-            Segmentos de destino
-          </label>
-          {loadingSegmentos ? (
-            <p className="text-sm text-[var(--color-text-muted)]">Carregando segmentos...</p>
-          ) : (
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto border border-white/10 rounded-lg p-3">
-              {segmentos.map((s) => (
-                <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={segmentosSelecionados.includes(s.id)}
-                    onChange={() => alternarSegmento(s.id)}
-                    className="accent-[var(--color-red-bright)]"
-                  />
-                  {s.name}
-                  <span className="text-xs text-[var(--color-text-muted)]">
-                    ({s.contact_count ?? 0} contatos)
-                  </span>
-                </label>
-              ))}
-              {segmentos.length === 0 && (
-                <p className="text-xs text-[var(--color-text-muted)]">Nenhum segmento disponível.</p>
+            <div className="field">
+              <label>Segmentos</label>
+              {loadingSegmentos ? (
+                <p style={{ fontSize: 13, color: 'var(--text-2)' }}>Carregando segmentos...</p>
+              ) : (
+                <>
+                  {segmentos.map((s) => (
+                    <div key={s.id} className="seg-option" onClick={() => alternarSegmento(s.id)}>
+                      <input
+                        type="checkbox"
+                        checked={segmentosSelecionados.includes(s.id)}
+                        onChange={() => alternarSegmento(s.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {s.name}
+                      <span className="cnt num">{(s.contact_count ?? 0).toLocaleString('pt-BR')} leads</span>
+                    </div>
+                  ))}
+                  {segmentosSelecionados.length > 0 && (
+                    <div className="hint num">
+                      {totalLeads.toLocaleString('pt-BR')} leads selecionados · duplicados removidos automaticamente
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          )}
+          </div>
+
+          {/* 2 — Mensagem */}
+          <div className="panel" style={{ marginBottom: 14 }}>
+            <div className="panel-head">
+              <div className="panel-title">2 · Mensagem<span>template aprovado pela Meta</span></div>
+            </div>
+
+            <div className="field">
+              <label>Template</label>
+              {loadingTemplates ? (
+                <p style={{ fontSize: 13, color: 'var(--text-2)' }}>Carregando templates...</p>
+              ) : (
+                <>
+                  <select className="input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+                    <option value="">Selecione um template</option>
+                    {templatesAprovados.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.meta_template_name} · {t.category ?? 'UTILITY'} · pt_BR
+                      </option>
+                    ))}
+                  </select>
+                  {!loadingTemplates && templatesAprovados.length === 0 && (
+                    <div className="hint">Nenhum template aprovado encontrado. Sincronize os templates com a Meta.</div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="field">
+              <label>Corpo da mensagem</label>
+              <textarea
+                className="input"
+                value={mensagem}
+                onChange={(e) => setMensagem(e.target.value)}
+                placeholder="Olá {{nome}}! Vimos que você demonstrou interesse em profissionalizar sua confecção..."
+              />
+              <div className="var-chips">
+                {['{{nome}}', '{{empresa}}', '{{cidade}}', '{{produto_interesse}}'].map((v) => (
+                  <span key={v} className="var-chip" onClick={() => setMensagem((m) => m + v)}>{v}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <label>Teste A/B</label>
+              <div className="seg-option" onClick={() => setAbTest((v) => !v)}>
+                <input type="checkbox" checked={abTest} onChange={() => setAbTest((v) => !v)} onClick={(e) => e.stopPropagation()} />
+                Ativar variante B
+                {abTest && <span className="cnt">50% / 50%</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* 3 — Agendamento */}
+          <div className="panel">
+            <div className="panel-head">
+              <div className="panel-title">3 · Agendamento</div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="field">
+                <label>Modo de disparo</label>
+                <select
+                  className="input"
+                  value={modoDisparo}
+                  onChange={(e) => setModoDisparo(e.target.value as 'now' | 'scheduled')}
+                >
+                  <option value="scheduled">Agendado</option>
+                  <option value="now">Manual (disparar agora)</option>
+                </select>
+              </div>
+              {modoDisparo === 'scheduled' && (
+                <div className="field">
+                  <label>Data e hora</label>
+                  <input
+                    type="datetime-local"
+                    className="input"
+                    value={dataAgendamento}
+                    onChange={(e) => setDataAgendamento(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 6 }}>
+              <button type="button" className="btn">Salvar rascunho</button>
+              <button type="submit" className="btn primary" disabled={salvando}>
+                {salvando ? 'Criando...' : 'Colocar na fila'}
+              </button>
+            </div>
+          </div>
         </div>
 
+        {/* Coluna direita */}
         <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1.5 font-medium">
-            Texto da mensagem
-          </label>
-          <textarea
-            value={mensagem}
-            onChange={(e) => setMensagem(e.target.value)}
-            rows={4}
-            placeholder="Escreva a mensagem que será enviada aos leads deste segmento..."
-            className="w-full px-3.5 py-2.5 rounded-lg text-sm bg-white/5 border border-white/10 outline-none focus:border-[var(--color-red-bright)] resize-none"
-          />
+          {/* Preview */}
+          <div className="panel" style={{ marginBottom: 14 }}>
+            <div className="panel-head">
+              <div className="panel-title">Preview</div>
+            </div>
+            <div className="preview-phone">
+              <div className="bubble">
+                <span dangerouslySetInnerHTML={{ __html: previewTexto }} />
+                <small>09:00 ✓✓</small>
+              </div>
+            </div>
+            <div className="hint">Variáveis preenchidas com o primeiro lead do segmento.</div>
+          </div>
+
+          {/* Verificações */}
+          <div className="panel">
+            <div className="panel-head">
+              <div className="panel-title">Verificações</div>
+            </div>
+            <div className="health-row">
+              <span>Template aprovado</span>
+              <span className={`status-txt ${templateSelecionado ? 'st-ok' : 'st-neutral'}`}>
+                {templateSelecionado ? 'Sim' : '—'}
+              </span>
+            </div>
+            <div className="health-row">
+              <span>Qualidade do número</span>
+              <span className="status-txt st-ok">Alta</span>
+            </div>
+            <div className="health-row">
+              <span>Tier disponível hoje</span>
+              <span className="num" style={{ color: 'var(--text-2)' }}>8.796</span>
+            </div>
+            <div className="health-row">
+              <span>Leads sem telefone válido</span>
+              <span className="status-txt st-warn num">23 ignorados</span>
+            </div>
+          </div>
         </div>
-
-        <div>
-          <label className="flex items-center gap-2 text-sm mb-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={enviarAgora}
-              onChange={(e) => setEnviarAgora(e.target.checked)}
-              className="accent-[var(--color-red-bright)]"
-            />
-            Enviar agora
-          </label>
-
-          {!enviarAgora && (
-            <input
-              type="datetime-local"
-              value={dataAgendamento}
-              onChange={(e) => setDataAgendamento(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg text-sm bg-white/5 border border-white/10 outline-none focus:border-[var(--color-red-bright)]"
-            />
-          )}
-        </div>
-
-        <button
-          type="submit"
-          disabled={salvando}
-          className="py-3 rounded-lg font-semibold text-sm text-white bg-gradient-to-br from-[var(--color-red-bright)] to-[var(--color-red-deep)] disabled:opacity-60"
-        >
-          {salvando ? 'Criando...' : enviarAgora ? 'Criar e enviar agora' : 'Agendar campanha'}
-        </button>
       </form>
     </div>
   )
