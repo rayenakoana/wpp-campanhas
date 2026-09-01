@@ -2,46 +2,32 @@ import { useEffect, useRef } from 'react'
 import { useDesempenho } from '../../hooks/useDesempenho'
 
 declare global {
-  interface Window {
-    Chart: any
-  }
+  interface Window { Chart: any }
 }
 
 const rotuloStatus: Record<string, string> = {
-  draft: 'Rascunho',
-  scheduled: 'Agendada',
-  running: 'Em andamento',
-  completed: 'Concluída',
-  failed: 'Falhou',
-  paused: 'Pausada',
+  draft: 'Rascunho', scheduled: 'Agendada', running: 'Em andamento',
+  completed: 'Concluída', firing: 'Em andamento', failed: 'Falhou', paused: 'Pausada',
 }
 
 function formatarData(iso: string | null): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-  })
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
 function formatarMoeda(valor: number): string {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function MiniChart({ canvasId }: { canvasId: string }) {
+function MiniChart() {
   const ref = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<any>(null)
 
   useEffect(() => {
-    if (!ref.current) return
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
-    script.onload = () => buildChart()
-    if (window.Chart) { buildChart(); return }
-    document.head.appendChild(script)
-
     function buildChart() {
+      if (!ref.current) return
       if (chartRef.current) chartRef.current.destroy()
-      const ctx = ref.current!.getContext('2d')!
+      const ctx = ref.current.getContext('2d')!
       function grad(color: string) {
         const g = ctx.createLinearGradient(0, 0, 0, 190)
         g.addColorStop(0, color); g.addColorStop(1, 'rgba(0,0,0,0)'); return g
@@ -59,44 +45,47 @@ function MiniChart({ canvasId }: { canvasId: string }) {
         data: {
           labels: ['22', '23', '24', '25', '26', '27', '28 ago'],
           datasets: [
-            { data: [520, 610, 588, 640, 602, 720, 538], borderColor: '#E8192C', borderWidth: 2, backgroundColor: grad('rgba(232,25,44,0.12)'), fill: true, tension: .3, pointRadius: 0 },
-            { data: [500, 592, 570, 618, 585, 700, 520], borderColor: '#8F8FA3', borderWidth: 1.5, fill: false, tension: .3, pointRadius: 0 },
-            { data: [320, 395, 362, 410, 388, 470, 340], borderColor: '#C9A017', borderWidth: 1.5, fill: false, tension: .3, pointRadius: 0 },
+            { data: [520,610,588,640,602,720,538], borderColor: '#E8192C', borderWidth: 2, backgroundColor: grad('rgba(232,25,44,0.12)'), fill: true, tension: .3, pointRadius: 0 },
+            { data: [500,592,570,618,585,700,520], borderColor: '#8F8FA3', borderWidth: 1.5, fill: false, tension: .3, pointRadius: 0 },
+            { data: [320,395,362,410,388,470,340], borderColor: '#C9A017', borderWidth: 1.5, fill: false, tension: .3, pointRadius: 0 },
           ],
         },
         options: lineOpts,
       })
     }
+
+    if (window.Chart) { buildChart(); return }
+    const script = document.createElement('script')
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
+    script.onload = buildChart
+    document.head.appendChild(script)
     return () => { if (chartRef.current) chartRef.current.destroy() }
   }, [])
 
-  return <canvas ref={ref} id={canvasId} />
+  return <canvas ref={ref} />
 }
 
 export default function Desempenho() {
   const { data, loading, error } = useDesempenho()
 
   const taxaEntrega = data && data.totalEnviado > 0
-    ? Math.round((data.totalEntregue / data.totalEnviado) * 100)
-    : 0
+    ? Math.round((data.totalEntregue / data.totalEnviado) * 100) : 0
+  const taxaLeitura = data && data.totalEntregue > 0
+    ? Math.round((data.totalLido / data.totalEntregue) * 100) : 0
 
   return (
     <div>
       {loading && (
-        <div className="panel" style={{ padding: '24px', fontSize: 13, color: 'var(--text-2)' }}>
-          Carregando dados...
-        </div>
+        <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--text-2)' }}>Carregando dados...</div>
       )}
-
       {error && (
-        <div className="panel" style={{ padding: '24px', fontSize: 13, color: '#f28c94', borderColor: 'rgba(232,25,44,0.3)' }}>
+        <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>
           Não foi possível carregar os dados: {error}
         </div>
       )}
 
       {!loading && !error && data && (
         <>
-          {/* KPI row */}
           <div className="kpi-row">
             <div className="kpi-card">
               <div className="kpi-label">Mensagens enviadas</div>
@@ -106,14 +95,12 @@ export default function Desempenho() {
             <div className="kpi-card">
               <div className="kpi-label">Taxa de entrega</div>
               <div className="kpi-value num">{taxaEntrega}%</div>
-              <div className="kpi-sub num">{data.totalEnviado - data.totalEntregue} falhas</div>
+              <div className="kpi-sub num">{data.totalFalha} falhas</div>
             </div>
             <div className="kpi-card">
               <div className="kpi-label">Taxa de leitura</div>
-              <div className="kpi-value num">
-                {data.totalEntregue > 0 ? Math.round((data.lidos / data.totalEntregue) * 100) : 0}%
-              </div>
-              <div className="kpi-sub num">{(data.lidos ?? 0).toLocaleString('pt-BR')} leituras</div>
+              <div className="kpi-value num">{taxaLeitura}%</div>
+              <div className="kpi-sub num">{data.totalLido.toLocaleString('pt-BR')} leituras</div>
             </div>
             <div className="kpi-card">
               <div className="kpi-label">Custo do período</div>
@@ -126,85 +113,49 @@ export default function Desempenho() {
             </div>
           </div>
 
-          {/* Grid: gráfico + saúde */}
           <div className="grid-2">
             <div className="panel">
               <div className="panel-head">
-                <div className="panel-title">
-                  Mensagens por dia<span>enviadas · entregues · lidas</span>
-                </div>
+                <div className="panel-title">Mensagens por dia<span>enviadas · entregues · lidas</span></div>
               </div>
-              <div className="chart-wrap">
-                <MiniChart canvasId="chartMsgs" />
-              </div>
+              <div className="chart-wrap"><MiniChart /></div>
             </div>
-
             <div className="panel">
-              <div className="panel-head">
-                <div className="panel-title">Saúde do número</div>
-              </div>
+              <div className="panel-head"><div className="panel-title">Saúde do número</div></div>
               {data.saudeNumero ? (
                 <>
-                  <div className="health-row">
-                    <span>Qualidade (Meta)</span>
-                    <span className="status-txt st-ok">{data.saudeNumero.quality_rating}</span>
-                  </div>
-                  <div className="health-row">
-                    <span>Tier de envio</span>
-                    <span className="num" style={{ fontWeight: 600 }}>{data.saudeNumero.messaging_tier}</span>
-                  </div>
-                  <div className="health-row">
-                    <span>Status do template ativo</span>
-                    <span className="status-txt st-ok">Aprovado</span>
-                  </div>
-                  <div className="health-row">
-                    <span>Última verificação</span>
-                    <span style={{ color: 'var(--text-3)', fontSize: 12.5 }}>{formatarData(data.saudeNumero.captured_at)}</span>
-                  </div>
+                  <div className="health-row"><span>Qualidade (Meta)</span><span className="status-txt st-ok">{data.saudeNumero.quality_rating}</span></div>
+                  <div className="health-row"><span>Tier de envio</span><span className="num" style={{ fontWeight: 600 }}>{data.saudeNumero.messaging_tier}</span></div>
+                  <div className="health-row"><span>Status do template ativo</span><span className="status-txt st-ok">Aprovado</span></div>
+                  <div className="health-row"><span>Última verificação</span><span style={{ color: 'var(--text-3)', fontSize: 12.5 }}>{formatarData(data.saudeNumero.captured_at)}</span></div>
                 </>
               ) : (
-                <div className="health-row">
-                  <span style={{ color: 'var(--text-3)', fontSize: 12.5 }}>
-                    Nenhum dado de saúde registrado ainda.
-                  </span>
-                </div>
+                <div className="health-row"><span style={{ color: 'var(--text-3)', fontSize: 12.5 }}>Nenhum dado de saúde registrado ainda.</span></div>
               )}
             </div>
           </div>
 
-          {/* Alertas */}
           <div className="panel" style={{ marginBottom: 20 }}>
-            <div className="panel-head">
-              <div className="panel-title">Alertas</div>
-            </div>
+            <div className="panel-head"><div className="panel-title">Alertas</div></div>
             <div className="health-row">
-              <span className="status-txt st-warn">
-                Campanha "Follow-up Diagnóstico" com taxa de falha acima de 5%
-              </span>
+              <span className="status-txt st-warn">Campanha "Follow-up Diagnóstico" com taxa de falha acima de 5%</span>
               <a style={{ color: 'var(--text-2)', fontSize: 12.5, cursor: 'pointer' }}>Ver campanha →</a>
             </div>
             <div className="health-row">
-              <span className="status-txt st-neutral">
-                Template "wpp_oferta_supplytex" aguardando aprovação da Meta há 2 dias
-              </span>
+              <span className="status-txt st-neutral">Template "wpp_oferta_supplytex" aguardando aprovação da Meta há 2 dias</span>
               <a style={{ color: 'var(--text-2)', fontSize: 12.5, cursor: 'pointer' }}>Ver template →</a>
             </div>
           </div>
 
-          {/* Tabela de campanhas recentes */}
           {data.campanhasRecentes.length > 0 && (
             <>
               <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>Campanhas recentes</div>
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Campanha</th>
-                    <th>Status</th>
-                    <th className="r">Enviados</th>
-                    <th className="r">Entregues</th>
-                    <th className="r">Lidos</th>
-                    <th className="r">Falhas</th>
-                    <th>Criada em</th>
+                    <th>Campanha</th><th>Status</th>
+                    <th className="r">Enviados</th><th className="r">Entregues</th>
+                    <th className="r">Lidos</th><th className="r">Falhas</th><th>Criada em</th>
                   </tr>
                 </thead>
                 <tbody>
