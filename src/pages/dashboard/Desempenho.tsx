@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDesempenho } from '../../hooks/useDesempenho'
 
 declare global {
@@ -67,6 +68,7 @@ function MiniChart() {
 
 export default function Desempenho() {
   const { data, loading, error } = useDesempenho()
+  const navigate = useNavigate()
 
   const taxaEntrega = data && data.totalEnviado > 0
     ? Math.round((data.totalEntregue / data.totalEnviado) * 100) : 0
@@ -135,17 +137,39 @@ export default function Desempenho() {
             </div>
           </div>
 
-          <div className="panel" style={{ marginBottom: 20 }}>
-            <div className="panel-head"><div className="panel-title">Alertas</div></div>
-            <div className="health-row">
-              <span className="status-txt st-warn">Campanha "Follow-up Diagnóstico" com taxa de falha acima de 5%</span>
-              <a style={{ color: 'var(--text-2)', fontSize: 12.5, cursor: 'pointer' }}>Ver campanha →</a>
-            </div>
-            <div className="health-row">
-              <span className="status-txt st-neutral">Template "wpp_oferta_supplytex" aguardando aprovação da Meta há 2 dias</span>
-              <a style={{ color: 'var(--text-2)', fontSize: 12.5, cursor: 'pointer' }}>Ver template →</a>
-            </div>
-          </div>
+          {(() => {
+            // Alertas dinâmicos baseados nos dados reais
+            const alertas: { msg: string; tipo: 'warn' | 'neutral'; label: string; rota: string }[] = []
+
+            data.campanhasRecentes.forEach(c => {
+              const total = c.total_envios ?? 0
+              const falhas = c.falhas ?? 0
+              if (total > 0 && falhas / total > 0.05) {
+                alertas.push({ msg: `Campanha "${c.name}" com taxa de falha acima de 5%`, tipo: 'warn', label: 'Ver campanha →', rota: '/campanhas' })
+              }
+            })
+
+            if (alertas.length === 0) return null
+
+            return (
+              <div className="panel" style={{ marginBottom: 20 }}>
+                <div className="panel-head"><div className="panel-title">Alertas</div></div>
+                {alertas.map((a, i) => (
+                  <div key={i} className="health-row">
+                    <span className={`status-txt st-${a.tipo}`}>{a.msg}</span>
+                    <a
+                      onClick={() => navigate(a.rota)}
+                      style={{ color: 'var(--text-2)', fontSize: 12.5, cursor: 'pointer', textDecoration: 'none' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-2)')}
+                    >
+                      {a.label}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
 
           {data.campanhasRecentes.length > 0 && (
             <>
@@ -160,7 +184,7 @@ export default function Desempenho() {
                 </thead>
                 <tbody>
                   {data.campanhasRecentes.map((c) => (
-                    <tr key={c.id} className="rowlink">
+                    <tr key={c.id} className="rowlink" onClick={() => navigate('/campanhas')}>
                       <td><div className="row-title">{c.name}</div></td>
                       <td><span className="status-txt st-neutral">{rotuloStatus[c.status] ?? c.status}</span></td>
                       <td className="r num">{c.total_envios}</td>
