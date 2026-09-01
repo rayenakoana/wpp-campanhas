@@ -1,137 +1,114 @@
 import { useState } from 'react'
 import { useSegmentos } from '../../hooks/useSegmentos'
-import { useLeadsDoSegmento } from '../../hooks/useLeadsDoSegmento'
 
 function formatarData(iso: string | null): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  const d = new Date(iso)
+  const agora = Date.now()
+  const diff = agora - d.getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 60) return `há ${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `há ${h}h`
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+const sourceLabel: Record<string, string> = {
+  rd_crm: 'RD CRM',
+  rd_marketing: 'RD Marketing',
+  manual: 'Manual',
+}
+
+const syncLabel: Record<string, { label: string; cls: string }> = {
+  rd_crm:       { label: 'A cada 2h',             cls: 'st-ok'      },
+  rd_marketing: { label: 'Tempo real (webhook)',   cls: 'st-ok'      },
+  manual:       { label: 'Estático',               cls: 'st-neutral' },
 }
 
 export default function Segmentos() {
   const { segmentos, loading, error } = useSegmentos()
-  const [segmentoSelecionado, setSegmentoSelecionado] = useState<string | null>(null)
-  const { leads, loading: loadingLeads, error: errorLeads } = useLeadsDoSegmento(segmentoSelecionado)
-
-  const segmento = segmentos.find((s) => s.id === segmentoSelecionado) ?? null
+  const [abaAtiva, setAbaAtiva] = useState<'segmentos' | 'leads'>('segmentos')
 
   return (
     <div>
-      <h1 className="font-display font-semibold text-2xl mb-1">Segmentos e leads</h1>
-      <p className="text-sm text-[var(--color-text-muted)] mb-6">
-        Segmentos de leads e listas usadas para disparo de campanhas.
-      </p>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18 }}>
+        <div className="tabs" style={{ marginBottom: 0 }}>
+          <button
+            className={`tab ${abaAtiva === 'segmentos' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('segmentos')}
+          >
+            Segmentos
+          </button>
+          <button
+            className={`tab ${abaAtiva === 'leads' ? 'active' : ''}`}
+            onClick={() => setAbaAtiva('leads')}
+          >
+            Todos os leads
+          </button>
+        </div>
+        <button className="btn primary">+ Novo segmento</button>
+      </div>
 
       {loading && (
-        <div className="glass-card p-6 text-sm text-[var(--color-text-muted)]">Carregando segmentos...</div>
+        <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--text-2)' }}>
+          Carregando segmentos...
+        </div>
       )}
 
       {error && (
-        <div className="glass-card p-6 text-sm text-[#f28c94] border-[rgba(232,25,44,0.3)]">
+        <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>
           Não foi possível carregar os segmentos: {error}
         </div>
       )}
 
-      {!loading && !error && segmentos.length === 0 && (
-        <div className="glass-card p-6 text-sm text-[var(--color-text-muted)]">
-          Nenhum segmento criado ainda.
-        </div>
-      )}
-
-      {!loading && !error && segmentos.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5">
-          {/* Lista de segmentos */}
-          <div className="glass-card divide-y divide-white/5 overflow-hidden">
-            {segmentos.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSegmentoSelecionado(s.id)}
-                className={`w-full text-left px-4 py-3 transition-colors ${
-                  segmentoSelecionado === s.id ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm">{s.name}</span>
-                  {s.is_dynamic && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(201,160,23,0.15)] text-[var(--color-gold)]">
-                      Dinâmico
+      {!loading && !error && (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Segmento</th>
+              <th>Fonte</th>
+              <th className="r">Leads</th>
+              <th>Sincronização</th>
+              <th className="r">Última atualização</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {segmentos.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 32, fontSize: 13 }}>
+                  Nenhum segmento criado ainda.
+                </td>
+              </tr>
+            )}
+            {segmentos.map((s) => {
+              const src = s.source ?? 'manual'
+              const sync = syncLabel[src] ?? { label: src, cls: 'st-neutral' }
+              return (
+                <tr key={s.id} className="rowlink">
+                  <td>
+                    <div className="row-title">{s.name}</div>
+                    <div className="row-sub">{s.description ?? s.source ?? '—'}</div>
+                  </td>
+                  <td>
+                    <span className="status-txt st-neutral">
+                      {sourceLabel[src] ?? src}
                     </span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
-                  <span>{s.source ?? 'Origem não informada'}</span>
-                  <span>{s.contact_count ?? 0} contatos</span>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Leads do segmento selecionado */}
-          <div className="glass-card p-5">
-            {!segmento && (
-              <p className="text-sm text-[var(--color-text-muted)]">
-                Selecione um segmento à esquerda para ver os leads.
-              </p>
-            )}
-
-            {segmento && (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="font-display font-semibold text-lg">{segmento.name}</h2>
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      Última sincronização: {formatarData(segmento.last_synced_at)}
-                    </p>
-                  </div>
-                </div>
-
-                {loadingLeads && (
-                  <p className="text-sm text-[var(--color-text-muted)]">Carregando leads...</p>
-                )}
-
-                {errorLeads && (
-                  <p className="text-sm text-[#f28c94]">Erro ao carregar leads: {errorLeads}</p>
-                )}
-
-                {!loadingLeads && !errorLeads && leads.length === 0 && (
-                  <p className="text-sm text-[var(--color-text-muted)]">
-                    Nenhum lead vinculado a este segmento.
-                  </p>
-                )}
-
-                {!loadingLeads && !errorLeads && leads.length > 0 && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-[var(--color-text-muted)] text-xs border-b border-white/5">
-                          <th className="px-3 py-2 font-medium">Nome</th>
-                          <th className="px-3 py-2 font-medium">WhatsApp</th>
-                          <th className="px-3 py-2 font-medium">E-mail</th>
-                          <th className="px-3 py-2 font-medium">Origem</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {leads.map((lead) => (
-                          <tr key={lead.id} className="border-b border-white/5 last:border-0">
-                            <td className="px-3 py-2 font-medium">{lead.name ?? '—'}</td>
-                            <td className="px-3 py-2 text-[var(--color-text-muted)]">
-                              {lead.whatsapp_e164 ?? '—'}
-                            </td>
-                            <td className="px-3 py-2 text-[var(--color-text-muted)]">{lead.email ?? '—'}</td>
-                            <td className="px-3 py-2 text-[var(--color-text-muted)]">{lead.origin ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+                  </td>
+                  <td className="r cell-num num">
+                    {(s.contact_count ?? 0).toLocaleString('pt-BR')}
+                  </td>
+                  <td>
+                    <span className={`status-txt ${sync.cls}`}>{sync.label}</span>
+                  </td>
+                  <td className="r row-sub">{formatarData(s.last_synced_at ?? null)}</td>
+                  <td className="arrow-cell">›</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       )}
     </div>
   )
