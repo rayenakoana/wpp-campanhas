@@ -186,8 +186,11 @@ export default function CriarCampanha() {
   const [sucesso, setSucesso]                             = useState<string | null>(null)
 
   // Ref para inserção de variável no cursor correto
-  const msgBodyRef = useRef<HTMLTextAreaElement>(null)
+  // focusTarget: 'a' = variante A (ou campo único), 'b' = variante B
+  const msgBodyRef   = useRef<HTMLTextAreaElement>(null)
+  const varBRef      = useRef<HTMLTextAreaElement>(null)
   const lastRangeRef = useRef<[number, number] | null>(null)
+  const focusTarget  = useRef<'a' | 'b'>('a')
 
   const primeiroSegmentoId   = segmentosSelecionados[0] ?? null
   const leadPreview          = usePrimeiroLead(primeiroSegmentoId)
@@ -198,11 +201,13 @@ export default function CriarCampanha() {
   }
 
   function inserirVariavel(v: string) {
-    const ta = msgBodyRef.current
-    if (!ta) { setMensagem(m => m + v); return }
+    const isB = abTest && focusTarget.current === 'b'
+    const ta  = isB ? varBRef.current : msgBodyRef.current
+    const setter = isB ? setVarianteB : setMensagem
+    if (!ta) { setter(m => m + v); return }
     const [s, e] = lastRangeRef.current ?? [ta.value.length, ta.value.length]
     const novo = ta.value.slice(0, s) + v + ta.value.slice(e)
-    setMensagem(novo)
+    setter(novo)
     setTimeout(() => { ta.focus(); ta.setSelectionRange(s + v.length, s + v.length) }, 0)
   }
 
@@ -374,26 +379,29 @@ export default function CriarCampanha() {
               <div className="hint">Clique para inserir no cursor, ou arraste até o campo de mensagem</div>
             </div>
 
-            {/* Corpo da mensagem */}
-            <div className="field">
-              <label>Corpo da mensagem</label>
-              <textarea
-                ref={msgBodyRef}
-                className="input"
-                value={mensagem}
-                onChange={e => setMensagem(e.target.value)}
-                onMouseUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
-                onKeyUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
-                onDragOver={e => { e.preventDefault(); (e.currentTarget as any).style.outline = '2px dashed var(--gold)' }}
-                onDragLeave={e => { (e.currentTarget as any).style.outline = '' }}
-                onDrop={e => {
-                  e.preventDefault(); (e.currentTarget as any).style.outline = ''
-                  const v = e.dataTransfer.getData('text/plain')
-                  if (v) inserirVariavel(v)
-                }}
-                placeholder="Olá {{nome}}! Vimos que você demonstrou interesse em profissionalizar sua confecção..."
-              />
-            </div>
+            {/* Corpo da mensagem — campo único quando A/B desativado */}
+            {!abTest && (
+              <div className="field">
+                <label>Corpo da mensagem</label>
+                <textarea
+                  ref={msgBodyRef}
+                  className="input"
+                  value={mensagem}
+                  onChange={e => setMensagem(e.target.value)}
+                  onFocus={() => { focusTarget.current = 'a' }}
+                  onMouseUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                  onKeyUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                  onDragOver={e => { e.preventDefault(); (e.currentTarget as any).style.outline = '2px dashed var(--gold)' }}
+                  onDragLeave={e => { (e.currentTarget as any).style.outline = '' }}
+                  onDrop={e => {
+                    e.preventDefault(); (e.currentTarget as any).style.outline = ''
+                    const v = e.dataTransfer.getData('text/plain')
+                    if (v) inserirVariavel(v)
+                  }}
+                  placeholder="Olá {{nome}}! Vimos que você demonstrou interesse em profissionalizar sua confecção..."
+                />
+              </div>
+            )}
 
             {/* Mídia do template */}
             <div className="field">
@@ -435,19 +443,46 @@ export default function CriarCampanha() {
 
               {abTest && (
                 <>
+                  <div className="hint" style={{ marginBottom: 10 }}>
+                    Clique no campo que deseja editar antes de inserir uma variável.
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
                     <div>
                       <div style={{ fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--gold)', marginBottom: 8, fontWeight: 600 }}>
                         Variante A
                       </div>
-                      <textarea className="input" rows={3} value={mensagem} onChange={e => setMensagem(e.target.value)} />
+                      <textarea
+                        ref={msgBodyRef}
+                        className="input" rows={4}
+                        value={mensagem}
+                        onChange={e => setMensagem(e.target.value)}
+                        onFocus={() => { focusTarget.current = 'a'; lastRangeRef.current = null }}
+                        onMouseUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                        onKeyUp={() => { const ta = msgBodyRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                        onDragOver={e => { e.preventDefault(); (e.currentTarget as any).style.outline = '2px dashed var(--gold)' }}
+                        onDragLeave={e => { (e.currentTarget as any).style.outline = '' }}
+                        onDrop={e => { e.preventDefault(); (e.currentTarget as any).style.outline = ''; focusTarget.current = 'a'; inserirVariavel(e.dataTransfer.getData('text/plain')) }}
+                        placeholder="Texto da variante A..."
+                        style={{ borderColor: focusTarget.current === 'a' ? 'var(--red)' : undefined }}
+                      />
                     </div>
                     <div>
                       <div style={{ fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--gold)', marginBottom: 8, fontWeight: 600 }}>
                         Variante B
                       </div>
-                      <textarea className="input" rows={3} value={varianteB} onChange={e => setVarianteB(e.target.value)}
-                        placeholder="Texto alternativo para a variante B..." />
+                      <textarea
+                        ref={varBRef}
+                        className="input" rows={4}
+                        value={varianteB}
+                        onChange={e => setVarianteB(e.target.value)}
+                        onFocus={() => { focusTarget.current = 'b'; lastRangeRef.current = null }}
+                        onMouseUp={() => { const ta = varBRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                        onKeyUp={() => { const ta = varBRef.current; if (ta) lastRangeRef.current = [ta.selectionStart, ta.selectionEnd] }}
+                        onDragOver={e => { e.preventDefault(); (e.currentTarget as any).style.outline = '2px dashed var(--gold)' }}
+                        onDragLeave={e => { (e.currentTarget as any).style.outline = '' }}
+                        onDrop={e => { e.preventDefault(); (e.currentTarget as any).style.outline = ''; focusTarget.current = 'b'; lastRangeRef.current = null; inserirVariavel(e.dataTransfer.getData('text/plain')) }}
+                        placeholder="Texto alternativo para a variante B..."
+                      />
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--text-2)' }}>
