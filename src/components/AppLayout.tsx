@@ -26,6 +26,13 @@ const navSections = [
         ),
       },
       {
+        to: '/templates',
+        label: 'Templates',
+        icon: (
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="4" rx="1" /><path d="M3 11h18M3 16h12" /></svg>
+        ),
+      },
+            {
         to: '/criar-campanha',
         label: 'Criar campanha',
         icon: (
@@ -75,6 +82,7 @@ const navSections = [
 const pageTitles: Record<string, string> = {
   '/': 'Desempenho',
   '/segmentos': 'Segmentos e leads',
+  '/templates': 'Templates',
   '/criar-campanha': 'Criar campanha',
   '/campanhas': 'Campanhas',
   '/radar': 'Radar de Conversões',
