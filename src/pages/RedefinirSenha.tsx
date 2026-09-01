@@ -19,10 +19,14 @@ export default function RedefinirSenha() {
     // O Supabase, ao processar o link de recuperacao, dispara o evento
     // PASSWORD_RECOVERY e ja autentica a sessao. E' esse evento que confirma
     // que estamos num fluxo valido de redefinicao (nao um acesso direto a URL).
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setProntoParaRedefinir(true)
-        setVerificando(false)
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      // PASSWORD_RECOVERY = link de redefinição de senha
+      // SIGNED_IN = link de convite de novo usuário (invite)
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        if (session) {
+          setProntoParaRedefinir(true)
+          setVerificando(false)
+        }
       }
     })
 
@@ -104,10 +108,10 @@ export default function RedefinirSenha() {
         {!verificando && prontoParaRedefinir && !sucesso && (
           <>
             <h1 className="font-display font-semibold text-[22px] text-center mb-1.5">
-              Defina uma nova senha
+              Defina sua senha
             </h1>
             <p className="text-[13px] text-[var(--color-text-muted)] text-center mb-7">
-              Escolha uma senha com pelo menos 8 caracteres.
+              Escolha uma senha com pelo menos 8 caracteres para acessar o WPP Campanhas.
             </p>
 
             {error && (
