@@ -97,7 +97,33 @@ function ModalEditar({ usuario, onClose, onSalvo }: { usuario: UsuarioComPapel &
   const [salvando, setSalvando] = useState(false)
   const [removendo, setRemovendo] = useState(false)
   const [confirmarRemover, setConfirmarRemover] = useState(false)
+  const [reenviando, setReenviando] = useState(false)
+  const [sucessoReenvio, setSucessoReenvio] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+
+  async function reenviarConvite() {
+    const email = (usuario as any).email ?? ''
+    if (!email) { setErro('E-mail do usuário não encontrado.'); return }
+    setReenviando(true); setErro(null); setSucessoReenvio(false)
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+        body: JSON.stringify({ email, redirect_to: 'https://wppcampanhas.costurandosucesso.com/redefinir-senha' }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        const msg = json.msg ?? json.message ?? json.error_description ?? JSON.stringify(json)
+        throw new Error(msg)
+      }
+      setSucessoReenvio(true)
+      setTimeout(() => setSucessoReenvio(false), 4000)
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao reenviar convite.')
+    } finally {
+      setReenviando(false)
+    }
+  }
 
   async function handleSalvar(e: FormEvent) {
     e.preventDefault()
@@ -157,14 +183,33 @@ function ModalEditar({ usuario, onClose, onSalvo }: { usuario: UsuarioComPapel &
       ) : (
         <form onSubmit={handleSalvar}>
           <SeletorPapel papel={papel} onChange={setPapel} />
+
+          {sucessoReenvio && (
+            <div style={{ padding: '9px 13px', background: 'rgba(61,190,123,0.1)', border: '1px solid rgba(61,190,123,0.3)', borderRadius: 8, fontSize: 12.5, color: '#8fe0b6', marginBottom: 14, letterSpacing: '0.01em' }}>
+              Convite reenviado com sucesso!
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-            <button
-              type="button"
-              style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Inter', padding: 0, letterSpacing: '0.01em' }}
-              onClick={() => setConfirmarRemover(true)}
-            >
-              Remover acesso
-            </button>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Inter', padding: 0, letterSpacing: '0.01em', transition: 'color 0.15s' }}
+                disabled={reenviando}
+                onClick={reenviarConvite}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-2)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
+              >
+                {reenviando ? 'Reenviando...' : 'Reenviar convite'}
+              </button>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Inter', padding: 0, letterSpacing: '0.01em' }}
+                onClick={() => setConfirmarRemover(true)}
+              >
+                Remover acesso
+              </button>
+            </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button type="button" className="btn" onClick={onClose}>Cancelar</button>
               <button type="submit" className="btn primary" disabled={salvando || papel === usuario.role}>
