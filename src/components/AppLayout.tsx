@@ -93,44 +93,57 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Sidebar */}
       <aside
-        className="relative z-10 flex-shrink-0 flex flex-col py-5"
+        className="relative z-10 flex-shrink-0 flex flex-col"
         style={{
-          width: 220,
-          background: 'rgba(14,14,21,0.72)',
-          backdropFilter: 'blur(18px)',
-          WebkitBackdropFilter: 'blur(18px)',
-          borderRight: '1px solid rgba(255,255,255,0.05)',
-          padding: '20px 12px',
+          width: 224,
+          background: 'rgba(11,11,18,0.82)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRight: '1px solid rgba(255,255,255,0.055)',
+          padding: '18px 10px 20px',
         }}
       >
-        {/* Brand */}
-        <div
-          className="flex items-center gap-2.5 px-2.5 mb-6"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 17 }}
-        >
-          <img
-            src="/logo-cs.png"
-            alt="CS"
-            style={{ width: 22, height: 22, borderRadius: 6, objectFit: 'cover' }}
-          />
-          WPP Campanhas
+        {/* Brand — logo CS + label do app */}
+        <div style={{ padding: '4px 10px 22px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 8 }}>
+          {/* Logo CS — ícone da marca */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <img
+              src="/logo-cs.png"
+              alt="Costurando Sucesso"
+              style={{
+                height: 28,
+                width: 'auto',
+                objectFit: 'contain',
+                filter: 'brightness(0) invert(1)',
+                opacity: 0.9,
+              }}
+            />
+          </div>
+          {/* Label do app — separado, mais discreto */}
+          <div style={{
+            fontSize: 10.5,
+            fontWeight: 600,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'var(--text-3)',
+            paddingLeft: 2,
+          }}>
+            WPP Campanhas
+          </div>
         </div>
 
         {/* Nav sections */}
-        <nav className="flex-1 flex flex-col">
+        <nav className="flex-1 flex flex-col" style={{ overflowY: 'auto' }}>
           {navSections.map((section) => (
-            <div key={section.label}>
-              <div
-                className="px-2.5"
-                style={{
-                  fontSize: 10,
-                  textTransform: 'uppercase',
-                  letterSpacing: 1,
-                  color: 'var(--text-3)',
-                  padding: '14px 10px 6px',
-                  fontWeight: 600,
-                }}
-              >
+            <div key={section.label} style={{ marginBottom: 4 }}>
+              <div style={{
+                fontSize: 9.5,
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: 'var(--text-3)',
+                padding: '12px 10px 5px',
+                fontWeight: 700,
+              }}>
                 {section.label}
               </div>
               {section.items.map((item) => (
@@ -141,40 +154,33 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   style={({ isActive }) => ({
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
+                    gap: 9,
+                    padding: '7px 10px',
                     borderRadius: 7,
-                    fontSize: 13.5,
-                    fontWeight: 500,
+                    fontSize: 13,
+                    fontWeight: isActive ? 500 : 400,
                     marginBottom: 1,
                     textDecoration: 'none',
                     transition: 'background 0.15s, color 0.15s',
-                    background: isActive ? 'var(--surface-2)' : 'transparent',
+                    background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
                     color: isActive ? 'var(--text)' : 'var(--text-2)',
+                    letterSpacing: '0.01em',
                   })}
                   className="nav-item-link"
                 >
                   {({ isActive }) => (
                     <>
-                      <span
-                        style={{
-                          width: 15,
-                          height: 15,
-                          flexShrink: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
+                      <span style={{ width: 15, height: 15, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <svg
                           viewBox="0 0 24 24"
-                          width={15}
-                          height={15}
+                          width={14}
+                          height={14}
                           fill="none"
                           stroke={isActive ? 'var(--red)' : 'currentColor'}
-                          strokeWidth={1.6}
+                          strokeWidth={isActive ? 1.8 : 1.5}
                           strokeLinecap="round"
                           strokeLinejoin="round"
+                          style={{ opacity: isActive ? 1 : 0.7 }}
                         >
                           {item.icon.props.children}
                         </svg>
@@ -187,6 +193,43 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
+
+        {/* Rodapé da sidebar — marca sutil */}
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          paddingTop: 14,
+          marginTop: 8,
+          paddingLeft: 10,
+          paddingRight: 10,
+        }}>
+          <div style={{
+            fontSize: 10,
+            color: 'var(--text-3)',
+            letterSpacing: '0.06em',
+            opacity: 0.6,
+            marginBottom: 10,
+          }}>
+            costurandosucesso.com
+          </div>
+          <button
+            onClick={() => signOut()}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-3)',
+              fontSize: 12,
+              cursor: 'pointer',
+              fontFamily: 'Inter',
+              padding: 0,
+              letterSpacing: '0.02em',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-2)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
+          >
+            Sair da conta
+          </button>
+        </div>
       </aside>
 
       {/* Main area */}
@@ -195,54 +238,35 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <header
           className="flex items-center justify-between sticky top-0 z-20"
           style={{
-            padding: '18px 40px',
+            padding: '16px 40px',
             borderBottom: '1px solid rgba(255,255,255,0.05)',
-            background: 'rgba(14,14,21,0.55)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
+            background: 'rgba(11,11,18,0.7)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
           }}
         >
-          <div className="flex items-center">
-            <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 22 }}>
+          <div className="flex items-center gap-3">
+            <h1 style={{
+              fontFamily: "'Barlow Condensed', sans-serif",
+              fontWeight: 700,
+              fontSize: 21,
+              letterSpacing: '0.01em',
+            }}>
               {pageTitle}
             </h1>
-            <span
-              className="flex items-center gap-1.5 ml-3.5"
-              style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500 }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: 'var(--green)',
-                  display: 'inline-block',
-                }}
-              />
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 11,
+              color: 'var(--text-3)',
+              fontWeight: 400,
+              letterSpacing: '0.02em',
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', opacity: 0.9 }} />
               Sincronizado há 2 min
             </span>
           </div>
-
-          <button
-            onClick={() => signOut()}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'rgba(255,255,255,0.05)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.09)',
-              color: 'var(--text)',
-              fontSize: 13,
-              fontWeight: 500,
-              padding: '8px 13px',
-              borderRadius: 9,
-              cursor: 'pointer',
-              fontFamily: 'Inter',
-            }}
-          >
-            Sair
-          </button>
         </header>
 
         {/* Page content */}
