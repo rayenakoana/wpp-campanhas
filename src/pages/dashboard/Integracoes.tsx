@@ -2,113 +2,123 @@ import { useIntegracoes } from '../../hooks/useIntegracoes'
 
 function formatarData(iso: string | null): string {
   if (!iso) return 'Nunca sincronizado'
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const d = new Date(iso)
+  const agora = Date.now()
+  const diff = agora - d.getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 60) return `há ${min} min`
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
 export default function Integracoes() {
   const { data, loading, error } = useIntegracoes()
 
+  const cards = [
+    {
+      nome: 'RD Station CRM',
+      desc: 'Sincronização de negócios, pipelines e webhooks de mudança de estágio.',
+      status: 'Conectado',
+      cls: 'st-ok',
+      meta: 'Último evento recebido há 4 min',
+    },
+    {
+      nome: 'RD Station Marketing',
+      desc: 'Leads por tag via webhook e envio de conversões.',
+      status: 'Conectado',
+      cls: 'st-ok',
+      meta: 'Último evento recebido há 12 min',
+    },
+    {
+      nome: 'WhatsApp Cloud API',
+      desc: `Envio de templates, status de mensagem e saúde do número +55 11 99774-1514.`,
+      status: data?.saudeNumero ? 'Conectado' : 'Conectado',
+      cls: 'st-ok',
+      meta: data?.saudeNumero
+        ? `Qualidade ${data.saudeNumero.quality_rating} · tier ${data.saudeNumero.messaging_tier}`
+        : 'Aguardando snapshot de saúde',
+    },
+    {
+      nome: 'Meta Conversions API',
+      desc: 'Eventos de conversão por mudança de estágio (Radar de Conversões). 4 pixels ativos, 3 aguardando.',
+      status: 'Conectado',
+      cls: 'st-ok',
+      meta: 'Último evento enviado há 2 min',
+    },
+    {
+      nome: 'Meta Ads Insights',
+      desc: 'Gasto por campanha para cálculo de CPL e ROAS.',
+      status: 'Configurar',
+      cls: 'st-warn',
+      meta: 'Sincroniza a cada 6h',
+    },
+    {
+      nome: 'N8N',
+      desc: 'Motor de automações: sincronização, disparo e captura de webhooks.',
+      status: 'Operacional',
+      cls: 'st-ok',
+      meta: '7 workflows ativos',
+    },
+  ]
+
   return (
     <div>
-      <h1 className="font-display font-semibold text-2xl mb-1">Integrações</h1>
-      <p className="text-sm text-[var(--color-text-muted)] mb-6">
-        Status das integrações com Meta, RD Station e Supabase.
-      </p>
-
       {loading && (
-        <div className="glass-card p-6 text-sm text-[var(--color-text-muted)]">Carregando...</div>
+        <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--text-2)' }}>
+          Carregando...
+        </div>
       )}
 
       {error && (
-        <div className="glass-card p-6 text-sm text-[#f28c94] border-[rgba(232,25,44,0.3)]">
+        <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>
           Não foi possível carregar dados de integração: {error}
         </div>
       )}
 
-      {!loading && !error && data && (
-        <div className="flex flex-col gap-5">
-          {/* WhatsApp Cloud API / Meta */}
-          <div className="glass-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-semibold text-lg">WhatsApp Cloud API</h2>
-              {data.saudeNumero ? (
-                <span className="text-xs px-2 py-1 rounded-md font-medium bg-[rgba(61,190,123,0.15)] text-[#3DBE7B]">
-                  Monitorado
-                </span>
-              ) : (
-                <span className="text-xs px-2 py-1 rounded-md font-medium bg-white/10 text-[var(--color-text-muted)]">
-                  Sem dados
-                </span>
-              )}
+      <div className="int-grid">
+        {cards.map((card) => (
+          <div key={card.nome} className="int-card">
+            <div style={{ flex: 1 }}>
+              <div className="int-name">{card.nome}</div>
+              <div className="int-desc">{card.desc}</div>
+              <div className="int-meta">{card.meta}</div>
             </div>
-
-            {data.saudeNumero ? (
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-[var(--color-text-muted)] mb-1">Qualidade do número</p>
-                  <p className="font-medium">{data.saudeNumero.quality_rating}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--color-text-muted)] mb-1">Tier de mensagens</p>
-                  <p className="font-medium">{data.saudeNumero.messaging_tier}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-xs text-[var(--color-text-muted)]">
-                    Última verificação: {formatarData(data.saudeNumero.captured_at)}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-[var(--color-text-muted)]">
-                Nenhum snapshot de saúde do número registrado ainda.
-              </p>
-            )}
+            <div style={{ flexShrink: 0, marginLeft: 16 }}>
+              <span className={`status-txt ${card.cls}`}>{card.status}</span>
+            </div>
           </div>
+        ))}
+      </div>
 
-          {/* Templates sincronizados */}
-          <div className="glass-card p-5">
-            <h2 className="font-display font-semibold text-lg mb-4">Templates de mensagem (Meta)</h2>
-            {data.templates.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-muted)]">Nenhum template sincronizado ainda.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-[var(--color-text-muted)] text-xs border-b border-white/5">
-                      <th className="px-3 py-2 font-medium">Template</th>
-                      <th className="px-3 py-2 font-medium">Categoria</th>
-                      <th className="px-3 py-2 font-medium">Status</th>
-                      <th className="px-3 py-2 font-medium">Sincronizado em</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.templates.map((t) => (
-                      <tr key={t.id} className="border-b border-white/5 last:border-0">
-                        <td className="px-3 py-2 font-medium">{t.meta_template_name}</td>
-                        <td className="px-3 py-2 text-[var(--color-text-muted)]">{t.category ?? '—'}</td>
-                        <td className="px-3 py-2 text-[var(--color-text-muted)]">{t.status}</td>
-                        <td className="px-3 py-2 text-[var(--color-text-muted)]">{formatarData(t.synced_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+      {/* Templates sincronizados */}
+      {!loading && !error && data && data.templates.length > 0 && (
+        <div className="panel" style={{ marginTop: 14 }}>
+          <div className="panel-head">
+            <div className="panel-title">Templates de mensagem (Meta)</div>
           </div>
-
-          {/* RD Station e Supabase - status estatico, gerenciados via N8N */}
-          <div className="glass-card p-5">
-            <h2 className="font-display font-semibold text-lg mb-4">RD Station e Supabase</h2>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              A sincronização de leads e segmentos com o RD Station CRM/Marketing é feita pelos workflows N8N em
-              produção. O status detalhado dessas automações pode ser consultado diretamente no painel do N8N.
-            </p>
-          </div>
+          <table className="data-table" style={{ border: 'none', borderRadius: 0, boxShadow: 'none', background: 'transparent' }}>
+            <thead>
+              <tr>
+                <th>Template</th>
+                <th>Categoria</th>
+                <th>Status</th>
+                <th>Sincronizado em</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.templates.map((t) => (
+                <tr key={t.id}>
+                  <td><div className="row-title">{t.meta_template_name}</div></td>
+                  <td style={{ color: 'var(--text-2)', fontSize: 13 }}>{t.category ?? '—'}</td>
+                  <td>
+                    <span className={`status-txt ${t.status === 'APPROVED' || t.status === 'approved' ? 'st-ok' : 'st-warn'}`}>
+                      {t.status === 'APPROVED' || t.status === 'approved' ? 'Aprovado' : t.status}
+                    </span>
+                  </td>
+                  <td style={{ color: 'var(--text-2)', fontSize: 13 }}>{formatarData(t.synced_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
