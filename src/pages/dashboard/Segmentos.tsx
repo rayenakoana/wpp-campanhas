@@ -218,7 +218,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
       <div
         style={{
           position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 50,
-          width: 640, maxWidth: '90vw',
+          width: 780, maxWidth: '92vw',
           background: 'rgba(14,14,21,0.97)',
           backdropFilter: 'blur(24px)',
           borderLeft: '1px solid rgba(255,255,255,0.08)',
@@ -227,9 +227,9 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
         }}
       >
         {/* Header do drawer */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line-soft)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ padding: '22px 28px', borderBottom: '1px solid var(--line-soft)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 20, marginBottom: 6 }}>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 22, letterSpacing: '0.01em', marginBottom: 8 }}>
               {segmento.name}
             </div>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -251,10 +251,10 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
         </div>
 
         {/* Stats rápidas */}
-        <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--line-soft)', display: 'flex', gap: 32, flexShrink: 0 }}>
+        <div style={{ padding: '16px 28px', borderBottom: '1px solid var(--line-soft)', display: 'flex', gap: 40, flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>LEADS</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 24 }}>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 28, letterSpacing: '-0.01em' }}>
               {(segmento.contact_count ?? leads.length).toLocaleString('pt-BR')}
             </div>
           </div>
@@ -273,7 +273,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
         </div>
 
         {/* Busca dentro do segmento */}
-        <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--line-soft)', flexShrink: 0 }}>
+        <div style={{ padding: '14px 28px', borderBottom: '1px solid var(--line-soft)', flexShrink: 0 }}>
           <input
             className="input"
             value={busca}
@@ -300,7 +300,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, background: 'rgba(14,14,21,0.97)', zIndex: 1 }}>
-                  <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 24px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>Nome</th>
+                  <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 28px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>Nome</th>
                   <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 16px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>WhatsApp</th>
                   <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 16px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>E-mail</th>
                   <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 16px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>Origem</th>
@@ -309,10 +309,10 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
               <tbody>
                 {leadsFiltrados.map((lead) => (
                   <tr key={lead.id} style={{ borderBottom: '1px solid var(--line-soft)' }}>
-                    <td style={{ padding: '12px 24px', fontSize: 13.5, fontWeight: 500 }}>{lead.name ?? '—'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-2)', fontFamily: 'monospace' }}>{lead.whatsapp_e164 ?? '—'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-2)' }}>{lead.email ?? '—'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-3)' }}>{lead.origin ?? '—'}</td>
+                    <td style={{ padding: '13px 28px', fontSize: 13.5, fontWeight: 500, letterSpacing: '0.01em' }}>{lead.name ?? '—'}</td>
+                    <td style={{ padding: '13px 18px', fontSize: 13, color: 'var(--text-2)', fontFamily: 'monospace', letterSpacing: '0.02em' }}>{lead.whatsapp_e164 ?? '—'}</td>
+                    <td style={{ padding: '13px 18px', fontSize: 13, color: 'var(--text-2)' }}>{lead.email ?? '—'}</td>
+                    <td style={{ padding: '13px 18px', fontSize: 11.5, color: 'var(--text-3)', letterSpacing: '0.02em' }}>{lead.origin ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -322,7 +322,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
 
         {/* Footer */}
         {!loading && leadsFiltrados.length > 0 && (
-          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--line-soft)', fontSize: 12, color: 'var(--text-3)', flexShrink: 0 }}>
+          <div style={{ padding: '13px 28px', borderTop: '1px solid var(--line-soft)', fontSize: 11.5, color: 'var(--text-3)', flexShrink: 0, letterSpacing: '0.02em' }}>
             {busca
               ? `${leadsFiltrados.length} resultado${leadsFiltrados.length !== 1 ? 's' : ''} para "${busca}"`
               : `${leadsFiltrados.length} lead${leadsFiltrados.length !== 1 ? 's' : ''} carregado${leadsFiltrados.length !== 1 ? 's' : ''}`}
