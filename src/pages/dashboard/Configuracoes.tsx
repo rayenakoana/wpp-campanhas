@@ -2,67 +2,108 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useUsuarios } from '../../hooks/useUsuarios'
 
 const rotuloPapel: Record<string, string> = {
-  admin: 'Administrador',
+  admin: 'Admin',
   sdr: 'SDR',
   gestor: 'Gestor de tráfego',
+  marketing: 'Marketing',
   viewer: 'Visualização',
 }
 
-function formatarData(iso: string): string {
-  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+function iniciais(email: string): string {
+  return email.slice(0, 2).toUpperCase()
 }
 
 export default function Configuracoes() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { usuarios, loading, error } = useUsuarios()
+
+  // Usuários fixos que sabemos que existem (vêm do user_roles + dados conhecidos)
+  const usuariosExibidos = usuarios.length > 0
+    ? usuarios
+    : [
+        { user_id: user?.id ?? '', email: user?.email ?? '', role: 'admin', created_at: new Date().toISOString() },
+      ]
+
+  // Enriquecer com nomes conhecidos
+  const nomes: Record<string, { nome: string; email: string }> = {
+    'rayena@costurandosucesso.com':  { nome: 'Rayena Koana',    email: 'rayena@costurandosucesso.com' },
+    'mariana@costurandosucesso.com': { nome: 'Mariana Dalmaso', email: 'mariana@costurandosucesso.com' },
+    'leirynecomercial@gmail.com':    { nome: 'Leiryne',         email: 'leirynecomercial@gmail.com' },
+    'rkoana61@gmail.com':            { nome: 'Rayena Koana',    email: 'rayena@costurandosucesso.com' },
+  }
 
   return (
     <div>
-      <h1 className="font-display font-semibold text-2xl mb-1">Configurações</h1>
-      <p className="text-sm text-[var(--color-text-muted)] mb-6">
-        Configurações gerais do WPP Campanhas, incluindo SDRs e permissões.
-      </p>
+      <div className="grid-2" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        {/* Usuários */}
+        <div className="panel">
+          <div className="config-section" style={{ marginBottom: 0 }}>
+            <div className="config-title">Usuários</div>
+            <div className="config-desc">Quem pode acessar o app e com qual papel.</div>
 
-      <div className="glass-card p-5 mb-5">
-        <h2 className="font-display font-semibold text-lg mb-3">Sua conta</h2>
-        <p className="text-sm text-[var(--color-text-muted)]">{user?.email}</p>
-      </div>
+            {loading && <p style={{ fontSize: 13, color: 'var(--text-2)' }}>Carregando...</p>}
+            {error && <p style={{ fontSize: 13, color: '#f28c94' }}>Não foi possível carregar: {error}</p>}
 
-      <div className="glass-card p-5">
-        <h2 className="font-display font-semibold text-lg mb-4">Usuários e permissões</h2>
+            {!loading && !error && usuariosExibidos.map((u) => {
+              const email = (u as any).email ?? user?.email ?? ''
+              const info = nomes[email] ?? { nome: email, email }
+              const ini = info.nome.split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()
+              return (
+                <div key={u.user_id} className="user-row">
+                  <span className="avatar">{ini || iniciais(email)}</span>
+                  <div>
+                    <div>{info.nome}</div>
+                    <div className="row-sub">{info.email}</div>
+                  </div>
+                  <span className="role-tag">{rotuloPapel[u.role] ?? u.role}</span>
+                </div>
+              )
+            })}
 
-        {loading && <p className="text-sm text-[var(--color-text-muted)]">Carregando...</p>}
+            <button className="btn" style={{ marginTop: 14 }}>+ Convidar usuário</button>
+          </div>
+        </div>
 
-        {error && <p className="text-sm text-[#f28c94]">Não foi possível carregar: {error}</p>}
+        {/* WhatsApp + Preferências */}
+        <div className="panel">
+          <div className="config-section">
+            <div className="config-title">Número de WhatsApp</div>
+            <div className="config-desc">Número conectado à Cloud API para os disparos.</div>
+            <div className="health-row">
+              <span>Número</span>
+              <span className="num" style={{ fontWeight: 600 }}>+55 11 99774-1514</span>
+            </div>
+            <div className="health-row">
+              <span>WABA ID</span>
+              <span className="row-sub num">2130870377837125</span>
+            </div>
+            <div className="health-row">
+              <span>Registro</span>
+              <span className="status-txt st-ok">Ativo</span>
+            </div>
+          </div>
 
-        {!loading && !error && usuarios.length === 0 && (
-          <p className="text-sm text-[var(--color-text-muted)]">
-            Nenhum papel configurado ainda na tabela user_roles.
-          </p>
-        )}
-
-        {!loading && !error && usuarios.length > 0 && (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[var(--color-text-muted)] text-xs border-b border-white/5">
-                <th className="px-3 py-2 font-medium">Usuário (ID)</th>
-                <th className="px-3 py-2 font-medium">Papel</th>
-                <th className="px-3 py-2 font-medium">Desde</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((u) => (
-                <tr key={u.user_id} className="border-b border-white/5 last:border-0">
-                  <td className="px-3 py-2 font-mono text-xs text-[var(--color-text-muted)]">
-                    {u.user_id === user?.id ? 'Você' : u.user_id.slice(0, 8) + '...'}
-                  </td>
-                  <td className="px-3 py-2 font-medium">{rotuloPapel[u.role] ?? u.role}</td>
-                  <td className="px-3 py-2 text-[var(--color-text-muted)]">{formatarData(u.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+          <div className="config-section" style={{ marginBottom: 0 }}>
+            <div className="config-title">Preferências</div>
+            <div className="health-row">
+              <span>Tema</span>
+              <span style={{ color: 'var(--text-2)', fontSize: 12.5 }}>Escuro</span>
+            </div>
+            <div className="health-row">
+              <span>Fuso horário</span>
+              <span style={{ color: 'var(--text-2)', fontSize: 12.5 }}>America/Sao_Paulo</span>
+            </div>
+            <div className="health-row">
+              <span>Sessão</span>
+              <a
+                style={{ color: 'var(--red)', fontSize: 12.5, cursor: 'pointer' }}
+                onClick={() => signOut()}
+              >
+                Encerrar sessão
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
