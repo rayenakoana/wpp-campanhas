@@ -8,6 +8,7 @@ import Desempenho from './pages/dashboard/Desempenho'
 import Segmentos from './pages/dashboard/Segmentos'
 import CriarCampanha from './pages/dashboard/CriarCampanha'
 import Campanhas from './pages/dashboard/Campanhas'
+import Templates from './pages/dashboard/Templates'
 import Radar from './pages/dashboard/Radar'
 import Integracoes from './pages/dashboard/Integracoes'
 import Configuracoes from './pages/dashboard/Configuracoes'
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/" element={<Protegida><Desempenho /></Protegida>} />
           <Route path="/segmentos" element={<Protegida><Segmentos /></Protegida>} />
           <Route path="/criar-campanha" element={<Protegida><CriarCampanha /></Protegida>} />
+          <Route path="/templates" element={<Protegida><Templates /></Protegida>} />
           <Route path="/campanhas" element={<Protegida><Campanhas /></Protegida>} />
           <Route path="/radar" element={<Protegida><Radar /></Protegida>} />
           <Route path="/integracoes" element={<Protegida><Integracoes /></Protegida>} />
