@@ -426,7 +426,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
       if (!res.ok || json.error) throw new Error(json.error?.message ?? JSON.stringify(json.error))
 
       const { error: dbError } = await supabaseWpp.from('templates').upsert(
-        { meta_template_id: json.id ?? null, meta_template_name: nomeApi, status: json.status ?? 'PENDING', category: categoria, language: 'pt_BR', body_text: corpo.trim(), synced_at: new Date().toISOString() },
+        { meta_template_id: json.id ?? null, meta_template_name: nomeApi, status: json.status ?? 'PENDING', category: categoria, language: 'pt_BR', body: corpo.trim(), body_text: corpo.trim(), synced_at: new Date().toISOString() },
         { onConflict: 'meta_template_name' }
       )
       if (dbError) throw dbError
@@ -725,15 +725,7 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
           if (json.error) throw new Error(json.error.message)
           acumulado = acumulado.concat(json.data ?? [])
           paginas++
-          if (!cancelado) {
-            if (paginas === 1 && acumulado.length > 0) {
-              const t0 = acumulado[0]
-              console.log('[BibMeta] 1º template bruto:', JSON.stringify(t0, null, 2))
-              console.log('[BibMeta] components:', JSON.stringify(t0.components, null, 2))
-              console.log('[BibMeta] keys:', Object.keys(t0))
-            }
-            setTemplates(deduplicar(acumulado))
-          }
+          if (!cancelado) setTemplates(deduplicar(acumulado))
           url = json.paging?.next ?? ''
         }
       } catch (err) {
@@ -826,6 +818,7 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
             status: json.status ?? 'APPROVED',
             category: t.category,
             language: t.language ?? 'pt_BR',
+            body:      t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
             body_text: t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
             synced_at: new Date().toISOString(),
           },

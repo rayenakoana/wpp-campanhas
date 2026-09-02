@@ -10,6 +10,7 @@ export interface TemplateOption {
   status: string
   category: string | null
   language: string | null
+  body: string
   body_text: string | null
   synced_at: string | null
 }
@@ -48,6 +49,7 @@ export function useTemplates(refreshKey = 0) {
             status:             t.status ?? 'UNKNOWN',
             category:           t.category ?? 'UTILITY',
             language:           t.language ?? 'pt_BR',
+            body:               t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
             body_text:          t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
             synced_at:          new Date().toISOString(),
           }))
@@ -68,6 +70,7 @@ export function useTemplates(refreshKey = 0) {
             status:             t.status ?? 'UNKNOWN',
             category:           t.category ?? null,
             language:           t.language ?? null,
+            body:               t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
             body_text:          t.components?.find((c: any) => c.type === 'BODY')?.text ?? null,
             synced_at:          new Date().toISOString(),
           }))
@@ -80,7 +83,7 @@ export function useTemplates(refreshKey = 0) {
         try {
           const { data, error: dbErr } = await supabaseWpp
             .from('templates')
-            .select('id, meta_template_id, meta_template_name, status, category, language, body_text, synced_at')
+            .select('id, meta_template_id, meta_template_name, status, category, language, body, body_text, synced_at')
             .order('meta_template_name', { ascending: true })
           if (dbErr) throw dbErr
           if (!cancelado) setTemplates((data ?? []) as TemplateOption[])
