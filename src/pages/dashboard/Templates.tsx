@@ -101,10 +101,18 @@ interface TemplatePreviewProps {
   compact?: boolean
 }
 function TemplatePreview({ components, compact = false }: TemplatePreviewProps) {
-  const header  = components?.find((c: any) => c.type === 'HEADER')
-  const body    = components?.find((c: any) => c.type === 'BODY')
-  const footer  = components?.find((c: any) => c.type === 'FOOTER')
-  const buttons = components?.find((c: any) => c.type === 'BUTTONS')
+  // Normaliza os components — a API às vezes retorna type em minúsculo ou estrutura diferente
+  const normalized = (components ?? []).map((c: any) => ({
+    ...c,
+    type: (c.type ?? '').toUpperCase(),
+    // Alguns campos vêm em 'text', outros em 'body', outros aninhados
+    text: c.text ?? c.body ?? c.content ?? '',
+  }))
+
+  const header  = normalized.find((c: any) => c.type === 'HEADER')
+  const body    = normalized.find((c: any) => c.type === 'BODY')
+  const footer  = normalized.find((c: any) => c.type === 'FOOTER')
+  const buttons = normalized.find((c: any) => c.type === 'BUTTONS')
 
   function highlightVars(text: string) {
     if (!text) return null
@@ -246,7 +254,7 @@ function DrawerDetalhe({ template, onClose, onUsarNaCampanha, modoLibrary, onAdi
         {/* Header drawer */}
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 19, letterSpacing: '0.01em' }}>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 19, letterSpacing: '0.01em', color: 'var(--text)' }}>
               {template.name ?? template.meta_template_name}
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' as const, alignItems: 'center' }}>
@@ -710,7 +718,12 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
           if (json.error) throw new Error(json.error.message)
           acumulado = acumulado.concat(json.data ?? [])
           paginas++
-          if (!cancelado) setTemplates(deduplicar(acumulado))
+          if (!cancelado) {
+            if (paginas === 1 && acumulado.length > 0) {
+              console.log('[Biblioteca Meta] Estrutura real do 1º template:', JSON.stringify(acumulado[0], null, 2))
+            }
+            setTemplates(deduplicar(acumulado))
+          }
           url = json.paging?.next ?? ''
         }
       } catch (err) {
