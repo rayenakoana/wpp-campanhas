@@ -676,13 +676,30 @@ function BibliotecaMeta() {
       setLoading(true)
       setErro(null)
       try {
-        // Busca da biblioteca de templates pré-aprovados da Meta
-        const res = await fetch(
-          `https://graph.facebook.com/v20.0/message_template_library?fields=name,category,language,components&limit=100&access_token=${META_TOKEN}`
-        )
-        const json = await res.json()
-        if (json.error) throw new Error(json.error.message)
-        setTemplates(json.data ?? [])
+        // Busca da biblioteca — a API retorna o mesmo template em vários idiomas
+        // Paginamos até ter todos, depois filtramos pt_BR (fallback: en_US, depois o primeiro)
+        let todos: LibTemplate[] = []
+        let url = `https://graph.facebook.com/v20.0/message_template_library?fields=name,category,language,components&limit=200&access_token=${META_TOKEN}`
+
+        while (url) {
+          const res = await fetch(url)
+          const json = await res.json()
+          if (json.error) throw new Error(json.error.message)
+          todos = todos.concat(json.data ?? [])
+          url = json.paging?.next ?? ''
+        }
+
+        // Agrupar por nome e escolher melhor idioma: pt_BR > en_US > qualquer
+        const porNome = new Map<string, LibTemplate>()
+        for (const t of todos) {
+          const existente = porNome.get(t.name)
+          if (!existente) { porNome.set(t.name, t); continue }
+          const lang = t.language ?? ''
+          if (lang === 'pt_BR') { porNome.set(t.name, t); continue }
+          if (lang === 'en_US' && existente.language !== 'pt_BR') { porNome.set(t.name, t) }
+        }
+
+        setTemplates(Array.from(porNome.values()))
       } catch (err) {
         setErro(err instanceof Error ? err.message : 'Erro ao carregar biblioteca')
       } finally {
@@ -716,18 +733,19 @@ function BibliotecaMeta() {
     setAdicionando(true)
     setAdicionadoOk(false)
     try {
+      // Payload correto para adicionar da biblioteca:
+      // name deve ser o nome original da biblioteca (não normalizado),
+      // e o campo correto é library_template_name sem components customizados
       const res = await fetch(
         `https://graph.facebook.com/v20.0/${WABA_ID}/message_templates`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${META_TOKEN}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: normalizarNome(t.name),
+            name: t.name,
             category: t.category,
-            language: t.language,
+            language: t.language ?? 'pt_BR',
             components: t.components,
-            library_template_name: t.name,
-            library_template_button_inputs: [],
           }),
         }
       )
