@@ -46,7 +46,7 @@ export function useTemplates(refreshKey = 0) {
           const rows = wabaTemplates.map((t: any) => ({
             meta_template_id:   t.id ?? null,
             meta_template_name: t.name,
-            status:             t.status ?? 'UNKNOWN',
+            status:             (t.status ?? 'pending').toLowerCase(),
             category:           (t.category ?? 'utility').toLowerCase(),
             language:           t.language ?? 'pt_BR',
             body:               t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
@@ -67,7 +67,7 @@ export function useTemplates(refreshKey = 0) {
             id:                 t.id ?? t.name,
             meta_template_id:   t.id ?? null,
             meta_template_name: t.name,
-            status:             t.status ?? 'UNKNOWN',
+            status:             (t.status ?? 'pending').toLowerCase(),
             category:           t.category?.toLowerCase() ?? null,
             language:           t.language ?? null,
             body:               t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
