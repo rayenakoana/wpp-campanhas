@@ -659,7 +659,7 @@ interface LibTemplate {
 type FiltroRecurso = 'todos' | 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT'
 type FiltroBotao   = 'todos' | 'NONE' | 'CTA' | 'QUICK_REPLY'
 
-function BibliotecaMeta() {
+function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: () => void; meusTemplatesNomes: Set<string> }) {
   const [templates, setTemplates] = useState<LibTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
@@ -802,6 +802,7 @@ function BibliotecaMeta() {
           { onConflict: 'meta_template_name' }
         )
         setAdicionadoOk(true)
+        onAdicionado()
         return
       } catch (err) {
         ultimoErro = err instanceof Error ? err.message : String(err)
@@ -926,7 +927,7 @@ function BibliotecaMeta() {
                     key={i}
                     className="panel"
                     style={{ padding: 16, cursor: 'pointer', transition: 'border-color .15s', display: 'flex', flexDirection: 'column' as const, gap: 12 }}
-                    onClick={() => { setSelecionado(t); setAdicionadoOk(false) }}
+                    onClick={() => { setSelecionado(t); setAdicionadoOk(meusTemplatesNomes.has(normalizarNome(t.name))) }}
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)')}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
                   >
@@ -984,6 +985,8 @@ export default function Templates() {
   const [abaAtiva, setAbaAtiva] = useState<'meus' | 'biblioteca'>('meus')
   const [modalAberto, setModalAberto] = useState(false)
   const [sucesso, setSucesso] = useState<string | null>(null)
+  const [meusTemplatesKey, setMeusTemplatesKey] = useState(0)
+  const { templates: meusTemplates } = useTemplates()
 
   function onTemplateCriado() {
     setModalAberto(false)
@@ -1027,8 +1030,15 @@ export default function Templates() {
         </div>
       )}
 
-      {abaAtiva === 'meus'      && <MeusTemplates onNovoTemplate={() => setModalAberto(true)} />}
-      {abaAtiva === 'biblioteca' && <BibliotecaMeta />}
+      {abaAtiva === 'meus'      && <MeusTemplates key={meusTemplatesKey} onNovoTemplate={() => setModalAberto(true)} />}
+      {abaAtiva === 'biblioteca' && (
+        <BibliotecaMeta
+          meusTemplatesNomes={new Set(meusTemplates.map((t) => t.meta_template_name))}
+          onAdicionado={() => {
+            setMeusTemplatesKey((k) => k + 1)
+          }}
+        />
+      )}
     </>
   )
 }
