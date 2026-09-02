@@ -502,8 +502,8 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
 }
 
 // ── Aba: Meus Templates ──────────────────────────────────────────────────────
-function MeusTemplates({ onNovoTemplate }: { onNovoTemplate: () => void }) {
-  const { templates, loading, error } = useTemplates()
+function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () => void; refreshKey?: number }) {
+  const { templates, loading, error } = useTemplates(refreshKey)
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [busca, setBusca] = useState('')
@@ -986,7 +986,7 @@ export default function Templates() {
   const [modalAberto, setModalAberto] = useState(false)
   const [sucesso, setSucesso] = useState<string | null>(null)
   const [meusTemplatesKey, setMeusTemplatesKey] = useState(0)
-  const { templates: meusTemplates } = useTemplates()
+  const { templates: meusTemplates } = useTemplates(meusTemplatesKey)
 
   function onTemplateCriado() {
     setModalAberto(false)
@@ -1030,7 +1030,7 @@ export default function Templates() {
         </div>
       )}
 
-      {abaAtiva === 'meus'      && <MeusTemplates key={meusTemplatesKey} onNovoTemplate={() => setModalAberto(true)} />}
+      {abaAtiva === 'meus'      && <MeusTemplates key={meusTemplatesKey} refreshKey={meusTemplatesKey} onNovoTemplate={() => setModalAberto(true)} />}
       {abaAtiva === 'biblioteca' && (
         <BibliotecaMeta
           meusTemplatesNomes={new Set(meusTemplates.map((t) => t.meta_template_name))}
