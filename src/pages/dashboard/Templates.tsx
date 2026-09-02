@@ -167,9 +167,9 @@ function TemplatePreview({ components, compact = false }: TemplatePreviewProps) 
         )}
 
         {/* Body */}
-        {body?.text && (
+        {(body?.text || body?.body || body?.content) && (
           <div style={{ color: bubbleText, lineHeight: 1.55 }}>
-            {highlightVars(body.text)}
+            {highlightVars(body.text || body.body || body.content || '')}
           </div>
         )}
 
@@ -245,7 +245,7 @@ function DrawerDetalhe({ template, onClose, onUsarNaCampanha, modoLibrary, onAdi
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 201,
         width: 480, maxWidth: '96vw',
-        background: 'rgba(14,14,21,0.97)',
+        background: 'var(--bg)',
         borderLeft: '1px solid rgba(255,255,255,0.07)',
         backdropFilter: 'blur(20px)',
         display: 'flex', flexDirection: 'column',
@@ -692,11 +692,18 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
     function deduplicar(todos: LibTemplate[]): LibTemplate[] {
       const porNome = new Map<string, LibTemplate>()
       for (const t of todos) {
+        // Normalizar components — a API às vezes retorna em formatos diferentes
+        const comps = (t.components ?? []).map((c: any) => ({
+          ...c,
+          type: (c.type ?? '').toUpperCase(),
+        }))
+        const normalizado = { ...t, components: comps }
+
         const existente = porNome.get(t.name)
-        if (!existente) { porNome.set(t.name, t); continue }
+        if (!existente) { porNome.set(t.name, normalizado); continue }
         const lang = t.language ?? ''
-        if (lang === 'pt_BR') { porNome.set(t.name, t); continue }
-        if (lang === 'en_US' && existente.language !== 'pt_BR') { porNome.set(t.name, t) }
+        if (lang === 'pt_BR') { porNome.set(t.name, normalizado); continue }
+        if (lang === 'en_US' && existente.language !== 'pt_BR') { porNome.set(t.name, normalizado) }
       }
       return Array.from(porNome.values())
     }
@@ -720,7 +727,10 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
           paginas++
           if (!cancelado) {
             if (paginas === 1 && acumulado.length > 0) {
-              console.log('[Biblioteca Meta] Estrutura real do 1º template:', JSON.stringify(acumulado[0], null, 2))
+              const t0 = acumulado[0]
+              console.log('[BibMeta] 1º template bruto:', JSON.stringify(t0, null, 2))
+              console.log('[BibMeta] components:', JSON.stringify(t0.components, null, 2))
+              console.log('[BibMeta] keys:', Object.keys(t0))
             }
             setTemplates(deduplicar(acumulado))
           }
