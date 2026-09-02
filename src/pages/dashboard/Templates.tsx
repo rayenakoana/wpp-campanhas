@@ -116,51 +116,59 @@ function TemplatePreview({ components, compact = false }: TemplatePreviewProps) 
     )
   }
 
+  // Fundo do chat = verde WhatsApp escuro no tema dark, bege no tema claro
+  const chatBg = 'var(--wpp-chat-bg, #0B1510)'
+  const bubbleBg = 'var(--bubble-bg)'
+  const bubbleText = 'var(--bubble-text)'
+  const mediaPlaceholderBg = 'var(--wpp-media-bg, rgba(255,255,255,0.08))'
+  const footerBorder = 'var(--wpp-footer-border, rgba(255,255,255,0.08))'
+
   return (
     <div style={{ background: 'var(--bg)', borderRadius: 12, padding: compact ? 10 : 14, border: '1px solid var(--line-soft)' }}>
       <div style={{
-        background: '#1F2C24',
+        background: bubbleBg,
         borderRadius: 10,
         padding: compact ? '10px 12px' : '13px 15px',
         fontSize: compact ? 12 : 13,
         lineHeight: 1.55,
         maxWidth: '100%',
+        color: bubbleText,
       }}>
         {/* Header */}
         {header && (
           <div style={{ marginBottom: 8 }}>
             {header.format === 'IMAGE' && (
-              <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 6, height: compact ? 60 : 90, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+              <div style={{ background: mediaPlaceholderBg, borderRadius: 6, height: compact ? 60 : 90, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
                 <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="var(--text-3)" strokeWidth={1.5}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
               </div>
             )}
             {header.format === 'VIDEO' && (
-              <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 6, height: compact ? 60 : 90, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+              <div style={{ background: mediaPlaceholderBg, borderRadius: 6, height: compact ? 60 : 90, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
                 <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="var(--text-3)" strokeWidth={1.5}><rect x="2" y="3" width="15" height="18" rx="2"/><path d="m17 8 5 3-5 3Z"/></svg>
               </div>
             )}
             {header.format === 'DOCUMENT' && (
-              <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 6, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <div style={{ background: mediaPlaceholderBg, borderRadius: 6, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="var(--text-3)" strokeWidth={1.5}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
                 <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Documento</span>
               </div>
             )}
             {(header.format === 'TEXT' || !header.format) && header.text && (
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>{highlightVars(header.text)}</div>
+              <div style={{ fontWeight: 600, marginBottom: 4, color: bubbleText }}>{highlightVars(header.text)}</div>
             )}
           </div>
         )}
 
         {/* Body */}
         {body?.text && (
-          <div style={{ color: 'var(--text)', lineHeight: 1.55 }}>
+          <div style={{ color: bubbleText, lineHeight: 1.55 }}>
             {highlightVars(body.text)}
           </div>
         )}
 
         {/* Footer */}
         {footer?.text && (
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 6 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, borderTop: `1px solid ${footerBorder}`, paddingTop: 6 }}>
             {footer.text}
           </div>
         )}
@@ -172,8 +180,8 @@ function TemplatePreview({ components, compact = false }: TemplatePreviewProps) 
       {/* Botões */}
       {buttons?.buttons?.map((btn: any, i: number) => (
         <div key={i} style={{
-          background: '#1F2C24',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: bubbleBg,
+          borderTop: `1px solid ${footerBorder}`,
           borderRadius: i === buttons.buttons.length - 1 ? '0 0 10px 10px' : 0,
           padding: compact ? '7px 12px' : '9px 15px',
           fontSize: compact ? 11 : 12.5,
