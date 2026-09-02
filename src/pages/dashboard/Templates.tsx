@@ -3,6 +3,16 @@ import { META_WABA_ID as WABA_ID, META_WPP_TOKEN as META_TOKEN } from '../../lib
 import { useTemplates } from '../../hooks/useTemplates'
 import { supabaseWpp } from '../../lib/supabase'
 
+
+// Mapeia status da Meta para valores aceitos pelo Supabase
+function normalizarStatus(s: string | undefined): string {
+  const v = (s ?? 'pending').toLowerCase()
+  if (v === 'approved') return 'approved'
+  if (v === 'rejected') return 'rejected'
+  if (v === 'disabled' || v === 'paused') return 'disabled'
+  return 'pending'
+}
+
 // ── Constantes Meta ──────────────────────────────────────────────────────────
 
 
@@ -426,7 +436,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
       if (!res.ok || json.error) throw new Error(json.error?.message ?? JSON.stringify(json.error))
 
       const { error: dbError } = await supabaseWpp.from('templates').upsert(
-        { meta_template_id: json.id ?? null, meta_template_name: nomeApi, status: (json.status ?? 'pending').toLowerCase(), category: categoria.toLowerCase(), language: 'pt_BR', body: corpo.trim(), body_text: corpo.trim(), synced_at: new Date().toISOString() },
+        { meta_template_id: json.id ?? null, meta_template_name: nomeApi, status: normalizarStatus(json.status), category: categoria.toLowerCase(), language: 'pt_BR', body: corpo.trim(), body_text: corpo.trim(), synced_at: new Date().toISOString() },
         { onConflict: 'meta_template_name' }
       )
       if (dbError) throw dbError
@@ -815,7 +825,7 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
           {
             meta_template_id: json.id ?? null,
             meta_template_name: nomeFinal,
-            status: (json.status ?? 'approved').toLowerCase(),
+            status: normalizarStatus(json.status),
             category: (t.category ?? 'utility').toLowerCase(),
             language: t.language ?? 'pt_BR',
             body:      t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
