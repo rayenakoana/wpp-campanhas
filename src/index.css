@@ -1,20 +1,60 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
-/* ── Tokens do modelo ── */
+/* ── Tokens — tema escuro (padrão) ── */
 :root {
-  --bg:       #0E0E15;
-  --surface:  #13131C;
-  --surface-2:#17171F;
-  --line:     #232330;
-  --line-soft:#1B1B26;
-  --red:      #E8192C;
-  --gold:     #C9A017;
-  --text:     #EDEDF2;
-  --text-2:   #8F8FA3;
-  --text-3:   #5C5C70;
-  --green:    #3DBE7B;
-  --amber:    #D97E2B;
+  --bg:           #0E0E15;
+  --surface:      #13131C;
+  --surface-2:    #17171F;
+  --line:         #232330;
+  --line-soft:    #1B1B26;
+  --red:          #E8192C;
+  --gold:         #C9A017;
+  --text:         #EDEDF2;
+  --text-2:       #8F8FA3;
+  --text-3:       #5C5C70;
+  --green:        #3DBE7B;
+  --amber:        #D97E2B;
+
+  --glass-sidebar:  rgba(11,11,18,0.82);
+  --glass-header:   rgba(11,11,18,0.70);
+  --glass-border:   rgba(255,255,255,0.07);
+  --glass-border-t: rgba(255,255,255,0.11);
+  --glass-panel:    linear-gradient(165deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.015) 45%, rgba(255,255,255,0.03) 100%);
+  --shadow-panel:   0 10px 32px rgba(0,0,0,0.28);
+  --bubble-bg:      #1F2C24;
+  --bubble-text:    #EDEDF2;
+  --glow-a: rgba(232,25,44,0.10);
+  --glow-b: rgba(201,160,23,0.05);
+  --glow-c: rgba(232,25,44,0.05);
+}
+
+/* ── Tokens — tema claro ── */
+[data-theme="light"] {
+  --bg:           #F2F0EC;
+  --surface:      #ECEAE6;
+  --surface-2:    #FFFFFF;
+  --line:         #E0DED8;
+  --line-soft:    #ECEAE5;
+  --red:          #C8172A;
+  --gold:         #A8840F;
+  --text:         #1A1A1F;
+  --text-2:       #5A5A6A;
+  --text-3:       #9A9AAA;
+  --green:        #1F9E5A;
+  --amber:        #B86820;
+
+  --glass-sidebar:  rgba(255,255,255,0.72);
+  --glass-header:   rgba(242,240,236,0.80);
+  --glass-border:   rgba(0,0,0,0.07);
+  --glass-border-t: rgba(0,0,0,0.10);
+  --glass-panel:    rgba(255,255,255,0.68);
+  --shadow-panel:   0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+  --bubble-bg:      #FFFFFF;
+  --bubble-text:    #111111;
+  --glow-a: rgba(200,23,42,0.055);
+  --glow-b: rgba(168,132,15,0.035);
+  --glow-c: rgba(200,23,42,0.030);
 }
 
 /* ── Reset ── */
@@ -37,9 +77,9 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(900px 500px at 85% -10%, rgba(232,25,44,0.10), transparent 60%),
-    radial-gradient(700px 460px at -10% 100%, rgba(201,160,23,0.05), transparent 60%),
-    radial-gradient(560px 400px at 50% 115%, rgba(232,25,44,0.05), transparent 65%);
+    radial-gradient(900px 500px at 85% -10%, var(--glow-a), transparent 60%),
+    radial-gradient(700px 460px at -10% 100%, var(--glow-b), transparent 60%),
+    radial-gradient(560px 400px at 50% 115%, var(--glow-c), transparent 65%);
   animation: ambient 14s ease-in-out infinite alternate;
 }
 
@@ -114,10 +154,10 @@ body::before {
 
 /* ── Panel ── */
 .panel {
-  background: linear-gradient(165deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.015) 45%, rgba(255,255,255,0.03) 100%);
+  background: var(--glass-panel);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid var(--glass-border);
   border-top-color: rgba(255,255,255,0.11);
   border-radius: 14px;
   padding: 20px 22px;
@@ -340,11 +380,12 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
   padding: 16px;
 }
 .bubble {
-  background: #1F2C24;
+  background: var(--bubble-bg);
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 13px;
   line-height: 1.5;
+  color: var(--bubble-text);
   max-width: 90%;
 }
 .bubble small {
@@ -472,3 +513,67 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 
 :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 ::selection    { background: #8a1520; color: white; }
+
+/* ── Tema claro: ajustes específicos ── */
+[data-theme="light"] .kpi-row {
+  background: rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .kpi-card {
+  background: rgba(255,255,255,0.72);
+}
+
+[data-theme="light"] .int-card {
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(0,0,0,0.07);
+  border-top-color: rgba(0,0,0,0.10);
+}
+
+[data-theme="light"] .data-table thead th {
+  background: rgba(0,0,0,0.02);
+}
+
+[data-theme="light"] .data-table tr:hover td {
+  background: rgba(0,0,0,0.025);
+}
+
+[data-theme="light"] .tabs {
+  background: rgba(0,0,0,0.07);
+}
+
+[data-theme="light"] .tab.active {
+  background: var(--surface-2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+[data-theme="light"] .btn {
+  background: var(--surface-2);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .btn:hover {
+  background: var(--surface);
+}
+
+[data-theme="light"] .btn.primary {
+  background: var(--red);
+  box-shadow: none;
+}
+
+[data-theme="light"] .preview-phone {
+  background: #ECE5DD;
+}
+
+[data-theme="light"] .ambient-glow {
+  display: none;
+}
+
+[data-theme="light"] body::before {
+  opacity: 0.7;
+}
+
+/* Logo CS invertida no tema claro */
+[data-theme="light"] img[alt="Costurando Sucesso"] {
+  filter: brightness(0) !important;
+  opacity: 0.85 !important;
+}

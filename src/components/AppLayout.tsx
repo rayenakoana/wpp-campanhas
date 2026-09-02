@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -93,6 +93,20 @@ const pageTitles: Record<string, string> = {
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { signOut } = useAuth()
   const location = useLocation()
+
+  // ── Tema ──────────────────────────────────────────────────
+  const [tema, setTema] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('cs-tema') as 'dark' | 'light') ?? 'dark'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', tema === 'light' ? 'light' : '')
+    localStorage.setItem('cs-tema', tema)
+  }, [tema])
+
+  function toggleTema() {
+    setTema((t) => t === 'dark' ? 'light' : 'dark')
+  }
   const pageTitle = pageTitles[location.pathname] ?? 'WPP Campanhas'
 
   return (
@@ -104,7 +118,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         className="relative z-10 flex-shrink-0 flex flex-col"
         style={{
           width: 224,
-          background: 'rgba(11,11,18,0.82)',
+          background: 'var(--glass-sidebar)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderRight: '1px solid rgba(255,255,255,0.055)',
@@ -248,7 +262,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           style={{
             padding: '16px 40px',
             borderBottom: '1px solid rgba(255,255,255,0.05)',
-            background: 'rgba(11,11,18,0.7)',
+            background: 'var(--glass-header)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
           }}
@@ -275,6 +289,40 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               Sincronizado há 2 min
             </span>
           </div>
+
+          {/* Toggle de tema */}
+          <button
+            onClick={toggleTema}
+            title={tema === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            style={{
+              background: 'none',
+              border: '1px solid var(--line)',
+              borderRadius: 8,
+              padding: '5px 10px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: 'var(--text-3)',
+              fontFamily: 'Inter',
+              transition: 'border-color .15s, color .15s',
+              marginLeft: 'auto',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--line-soft)'; e.currentTarget.style.color = 'var(--text-2)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.color = 'var(--text-3)' }}
+          >
+            {tema === 'dark' ? (
+              <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            )}
+            {tema === 'dark' ? 'Claro' : 'Escuro'}
+          </button>
         </header>
 
         {/* Page content */}
