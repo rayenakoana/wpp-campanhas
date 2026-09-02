@@ -740,45 +740,77 @@ function BibliotecaMeta() {
   async function adicionarNaWABA(t: LibTemplate) {
     setAdicionando(true)
     setAdicionadoOk(false)
-    try {
-      // Payload correto para adicionar da biblioteca:
-      // name deve ser o nome original da biblioteca (não normalizado),
-      // e o campo correto é library_template_name sem components customizados
-      const res = await fetch(
-        `https://graph.facebook.com/v20.0/${WABA_ID}/message_templates`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${META_TOKEN}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: t.name,
+
+    // Tenta estratégias em ordem até uma funcionar
+    const nomeFinal = normalizarNome(t.name)
+    const estrategias = [
+      // 1. library_template_name (caminho oficial da Meta para importar da biblioteca)
+      {
+        name: nomeFinal,
+        category: t.category,
+        language: t.language ?? 'pt_BR',
+        library_template_name: t.name,
+        library_template_button_inputs: [],
+      },
+      // 2. Só os campos essenciais sem components (alguns tokens aceitam assim)
+      {
+        name: nomeFinal,
+        category: t.category,
+        language: t.language ?? 'pt_BR',
+      },
+      // 3. Com components filtrados (sem campos que a API pode rejeitar)
+      {
+        name: nomeFinal,
+        category: t.category,
+        language: t.language ?? 'pt_BR',
+        components: (t.components ?? []).map((c: any) => {
+          // Remove campos extras que a API às vezes rejeita
+          const { example, ...rest } = c
+          return rest
+        }),
+      },
+    ]
+
+    let ultimoErro = ''
+    for (const payload of estrategias) {
+      try {
+        const res = await fetch(
+          `https://graph.facebook.com/v20.0/${WABA_ID}/message_templates`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${META_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }
+        )
+        const json = await res.json()
+        if (json.error) {
+          ultimoErro = json.error.message ?? JSON.stringify(json.error)
+          continue // tenta próxima estratégia
+        }
+
+        // Sucesso — salva no Supabase
+        await supabaseWpp.from('templates').upsert(
+          {
+            meta_template_id: json.id ?? null,
+            meta_template_name: nomeFinal,
+            status: json.status ?? 'APPROVED',
             category: t.category,
             language: t.language ?? 'pt_BR',
-            components: t.components,
-          }),
-        }
-      )
-      const json = await res.json()
-      if (json.error) throw new Error(json.error.message)
-
-      // Salvar no Supabase
-      await supabaseWpp.from('templates').upsert(
-        {
-          meta_template_id: json.id ?? null,
-          meta_template_name: normalizarNome(t.name),
-          status: 'APPROVED',
-          category: t.category,
-          language: t.language,
-          body_text: t.components?.find((c) => c.type === 'BODY')?.text ?? '',
-          synced_at: new Date().toISOString(),
-        },
-        { onConflict: 'meta_template_name' }
-      )
-      setAdicionadoOk(true)
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao adicionar template')
-    } finally {
-      setAdicionando(false)
+            body_text: t.components?.find((c: any) => c.type === 'BODY')?.text ?? '',
+            synced_at: new Date().toISOString(),
+          },
+          { onConflict: 'meta_template_name' }
+        )
+        setAdicionadoOk(true)
+        return
+      } catch (err) {
+        ultimoErro = err instanceof Error ? err.message : String(err)
+      }
     }
+
+    // Todas as estratégias falharam
+    alert(`Não foi possível adicionar o template à WABA.\n\nErro: ${ultimoErro}\n\nIsso pode acontecer porque:\n• O template já existe na sua WABA\n• O token não tem permissão de escrita em templates\n• A Meta não permite importar este template via API`)
+    setAdicionando(false)
   }
 
   // Filtros laterais
