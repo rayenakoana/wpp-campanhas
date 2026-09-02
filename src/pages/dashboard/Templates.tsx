@@ -672,41 +672,49 @@ function BibliotecaMeta() {
   const [adicionadoOk, setAdicionadoOk] = useState(false)
 
   useEffect(() => {
+    let cancelado = false
+
+    function deduplicar(todos: LibTemplate[]): LibTemplate[] {
+      const porNome = new Map<string, LibTemplate>()
+      for (const t of todos) {
+        const existente = porNome.get(t.name)
+        if (!existente) { porNome.set(t.name, t); continue }
+        const lang = t.language ?? ''
+        if (lang === 'pt_BR') { porNome.set(t.name, t); continue }
+        if (lang === 'en_US' && existente.language !== 'pt_BR') { porNome.set(t.name, t) }
+      }
+      return Array.from(porNome.values())
+    }
+
     async function carregar() {
       setLoading(true)
       setErro(null)
+      setTemplates([])
       try {
-        // Busca da biblioteca — a API retorna o mesmo template em vários idiomas
-        // Paginamos até ter todos, depois filtramos pt_BR (fallback: en_US, depois o primeiro)
-        let todos: LibTemplate[] = []
+        let acumulado: LibTemplate[] = []
         let url = `https://graph.facebook.com/v20.0/message_template_library?fields=name,category,language,components&limit=200&access_token=${META_TOKEN}`
+        let paginas = 0
+        const MAX_PAGINAS = 5
 
-        while (url) {
+        while (url && paginas < MAX_PAGINAS) {
+          if (cancelado) return
           const res = await fetch(url)
           const json = await res.json()
           if (json.error) throw new Error(json.error.message)
-          todos = todos.concat(json.data ?? [])
+          acumulado = acumulado.concat(json.data ?? [])
+          paginas++
+          if (!cancelado) setTemplates(deduplicar(acumulado))
           url = json.paging?.next ?? ''
         }
-
-        // Agrupar por nome e escolher melhor idioma: pt_BR > en_US > qualquer
-        const porNome = new Map<string, LibTemplate>()
-        for (const t of todos) {
-          const existente = porNome.get(t.name)
-          if (!existente) { porNome.set(t.name, t); continue }
-          const lang = t.language ?? ''
-          if (lang === 'pt_BR') { porNome.set(t.name, t); continue }
-          if (lang === 'en_US' && existente.language !== 'pt_BR') { porNome.set(t.name, t) }
-        }
-
-        setTemplates(Array.from(porNome.values()))
       } catch (err) {
-        setErro(err instanceof Error ? err.message : 'Erro ao carregar biblioteca')
+        if (!cancelado) setErro(err instanceof Error ? err.message : 'Erro ao carregar biblioteca')
       } finally {
-        setLoading(false)
+        if (!cancelado) setLoading(false)
       }
     }
+
     carregar()
+    return () => { cancelado = true }
   }, [])
 
   function getHeaderType(t: LibTemplate): string {
