@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useTemplates } from '../../hooks/useTemplates'
 import { supabaseWpp } from '../../lib/supabase'
 
@@ -211,8 +210,6 @@ function DrawerDetalhe({ template, onClose, onUsarNaCampanha, modoLibrary, onAdi
   const headerType = headerComp?.format ?? 'TEXT'
 
   const allButtons = template.components?.find((c: any) => c.type === 'BUTTONS')?.buttons ?? []
-  const ctaButtons = allButtons.filter((b: any) => b.type === 'URL' || b.type === 'PHONE_NUMBER')
-  const qrButtons  = allButtons.filter((b: any) => b.type === 'QUICK_REPLY')
 
   const qualityScore = template.quality_score?.score ?? template.qualityScore ?? null
 
@@ -507,7 +504,6 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
 // ── Aba: Meus Templates ──────────────────────────────────────────────────────
 function MeusTemplates({ onNovoTemplate }: { onNovoTemplate: () => void }) {
   const { templates, loading, error } = useTemplates()
-  const navigate = useNavigate()
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [busca, setBusca] = useState('')
