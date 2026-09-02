@@ -117,7 +117,6 @@ function TemplatePreview({ components, compact = false }: TemplatePreviewProps) 
   }
 
   // Fundo do chat = verde WhatsApp escuro no tema dark, bege no tema claro
-  const chatBg = 'var(--wpp-chat-bg, #0B1510)'
   const bubbleBg = 'var(--bubble-bg)'
   const bubbleText = 'var(--bubble-text)'
   const mediaPlaceholderBg = 'var(--wpp-media-bg, rgba(255,255,255,0.08))'
