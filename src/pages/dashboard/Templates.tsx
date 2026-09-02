@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
+import { META_WABA_ID as WABA_ID, META_WPP_TOKEN as META_TOKEN } from '../../lib/metaConfig'
 import { useTemplates } from '../../hooks/useTemplates'
 import { supabaseWpp } from '../../lib/supabase'
 
 // ── Constantes Meta ──────────────────────────────────────────────────────────
-const WABA_ID   = '2130870377837125'
-const META_TOKEN = 'EAAeNfyyZBJy4BST4brul4auxTkxI2BPlcNg3ZCu41dPj2tfbXetW03LP5FdTXISt1Jq0CMjZBOZCdgeRJLsCWqDfVsamwyZBZAkv2FgLp4AeLLk6jub8qKpPx4TCGvwwg5HEQrPfyZBqZAhpZCTQsJOFV6cdchXNxZBNmCke5KLAyyNtvEmO43jZAmZB9h0EEfgmIQZDZD'
+
 
 const CATEGORIAS = [
   { value: 'UTILITY',        label: 'Utilidade',       desc: 'Transacional, confirmações, alertas',   color: 'rgba(255,255,255,0.09)',  text: 'var(--text-2)' },
