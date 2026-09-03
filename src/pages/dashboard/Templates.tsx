@@ -669,7 +669,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
       {/* Drawer full-height */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 301,
-        width: '100%', maxWidth: 1100,
+        width: '100%', maxWidth: 1400,
         background: 'var(--bg)',
         borderLeft: '1px solid rgba(255,255,255,0.09)',
         display: 'flex', flexDirection: 'column',
@@ -684,7 +684,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
         </div>
 
         {/* Body — 2 colunas */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', flex: 1, overflow: 'hidden' }}>
 
           {/* Formulário */}
           <div style={{ overflowY: 'auto', padding: '22px 26px' }}>
@@ -805,7 +805,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
             {categoria !== 'AUTHENTICATION' && (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--text-3)', marginBottom: 10, paddingBottom: 7, borderBottom: '1px solid var(--line-soft)' }}>Corpo da mensagem</div>
-                <textarea id="corpo-textarea" className="input" value={corpo} onChange={e => setCorpo(e.target.value)} rows={5}
+                <textarea id="corpo-textarea" className="input" value={corpo} onChange={e => setCorpo(e.target.value)} rows={8}
                   placeholder="Olá {{1}}! Vimos que você demonstrou interesse na Imersão Paraguai. Temos uma condição especial até {{2}}." />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 }}>
                   <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const, alignItems: 'center' }}>
