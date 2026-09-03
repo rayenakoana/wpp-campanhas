@@ -96,9 +96,10 @@ function DateFilter({ preset, setPreset, customFrom, setCustomFrom, customTo, se
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
-          background: 'var(--surface-2)', border: '1px solid var(--line)',
+          background: 'var(--surface)', border: '1px solid var(--line)',
           borderRadius: 10, padding: 12, width: 260,
-          boxShadow: '0 16px 40px rgba(0,0,0,.55)',
+          boxShadow: '0 16px 40px rgba(0,0,0,.25)',
+          backdropFilter: 'blur(16px)',
         }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginBottom: 12 }}>
             {(Object.keys(PRESET_LABELS) as DatePreset[]).map(p => (
