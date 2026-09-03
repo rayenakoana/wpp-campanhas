@@ -540,7 +540,7 @@ function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () 
 
   const filtrados = templates.filter((t) => {
     const okStatus = filtroStatus === 'todos' || t.status?.toUpperCase() === filtroStatus
-    const okCat   = filtroCategoria === 'todas' || t.category === filtroCategoria
+    const okCat   = filtroCategoria === 'todas' || (t.category ?? '').toUpperCase() === filtroCategoria.toUpperCase()
     const okBusca = !busca || t.meta_template_name.toLowerCase().includes(busca.toLowerCase())
     return okStatus && okCat && okBusca
   })
@@ -790,7 +790,7 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
 
   const filtrados = templates.filter((t) => {
     const okBusca = !busca || t.name.toLowerCase().includes(busca.toLowerCase())
-    const okCat   = filtroCategoria === 'todas' || t.category === filtroCategoria
+    const okCat   = filtroCategoria === 'todas' || (t.category ?? '').toUpperCase() === filtroCategoria.toUpperCase()
     const okRecurso = filtroRecurso === 'todos' || getHeaderType(t) === filtroRecurso
     const okBotao = filtroBotao === 'todos' || getBotaoTipo(t) === filtroBotao
     return okBusca && okCat && okRecurso && okBotao
