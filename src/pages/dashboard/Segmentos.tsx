@@ -219,7 +219,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
         style={{
           position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 50,
           width: 780, maxWidth: '92vw',
-          background: 'rgba(14,14,21,0.97)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(24px)',
           borderLeft: '1px solid rgba(255,255,255,0.08)',
           display: 'flex', flexDirection: 'column',
@@ -299,7 +299,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
           {!loading && !error && leadsFiltrados.length > 0 && (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ position: 'sticky', top: 0, background: 'rgba(14,14,21,0.97)', zIndex: 1 }}>
+                <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
                   <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 28px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>Nome</th>
                   <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 16px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>WhatsApp</th>
                   <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 16px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>E-mail</th>

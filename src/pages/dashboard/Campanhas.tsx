@@ -120,7 +120,7 @@ function DrawerCampanha({ campanha, onClose }: { campanha: CampanhaCompleta; onC
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 50,
         width: 760, maxWidth: '92vw',
-        background: 'rgba(11,11,18,0.97)',
+        background: 'var(--surface)',
         backdropFilter: 'blur(24px)',
         borderLeft: '1px solid rgba(255,255,255,0.07)',
         display: 'flex', flexDirection: 'column',
@@ -280,7 +280,7 @@ function DrawerCampanha({ campanha, onClose }: { campanha: CampanhaCompleta; onC
           {!loading && enviosFiltrados.length > 0 && (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ position: 'sticky', top: 0, background: 'rgba(11,11,18,0.97)', zIndex: 1 }}>
+                <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
                   {['Lead ID', 'Status', 'Enviado em', 'Entregue em', 'Lido em', 'Motivo falha'].map((h) => (
                     <th key={h} style={{
                       textAlign: 'left', fontSize: 10.5, textTransform: 'uppercase',

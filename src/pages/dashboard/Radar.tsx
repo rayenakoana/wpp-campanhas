@@ -95,7 +95,7 @@ function DateFilter({ preset, setPreset, customFrom, setCustomFrom, customTo, se
       </button>
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 50,
+          position: 'fixed', top: 'auto', right: 40, zIndex: 200,
           background: 'var(--surface-2)', border: '1px solid var(--line)',
           borderRadius: 10, padding: 12, width: 260,
           boxShadow: '0 16px 40px rgba(0,0,0,.55)',

@@ -457,7 +457,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
-      <div className="panel" style={{ width: 680, maxWidth: '96vw', padding: 32, maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+      <div className="panel" style={{ width: 680, maxWidth: '96vw', padding: 32, maxHeight: '90vh', overflowY: 'auto', background: 'var(--surface)', backdropFilter: 'blur(24px)' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: '0.01em' }}>Novo template</div>
