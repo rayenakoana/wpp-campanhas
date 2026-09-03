@@ -295,7 +295,7 @@ function DrawerDetalhe({ template, onClose, onUsarNaCampanha, modoLibrary, onAdi
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
               Preview
             </div>
-            <TemplatePreview components={template.components ?? []} />
+            <TemplatePreview components={template.components ?? []} bodyFallback={template.body} />
           </div>
 
           {/* Detalhes técnicos */}
