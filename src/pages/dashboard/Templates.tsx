@@ -109,8 +109,9 @@ function CategoriaBadge({ cat }: { cat: string }) {
 interface TemplatePreviewProps {
   components: any[]
   compact?: boolean
+  bodyFallback?: string
 }
-function TemplatePreview({ components, compact = false }: TemplatePreviewProps) {
+function TemplatePreview({ components, compact = false, bodyFallback }: TemplatePreviewProps) {
   // Normaliza os components — a API às vezes retorna type em minúsculo ou estrutura diferente
   const normalized = (components ?? []).map((c: any) => ({
     ...c,
@@ -120,7 +121,8 @@ function TemplatePreview({ components, compact = false }: TemplatePreviewProps) 
   }))
 
   const header  = normalized.find((c: any) => c.type === 'HEADER')
-  const body    = normalized.find((c: any) => c.type === 'BODY')
+  const bodyComp = normalized.find((c: any) => c.type === 'BODY')
+  const body    = bodyComp ?? (bodyFallback ? { type: 'BODY', text: bodyFallback } : undefined)
   const footer  = normalized.find((c: any) => c.type === 'FOOTER')
   const buttons = normalized.find((c: any) => c.type === 'BUTTONS')
 
