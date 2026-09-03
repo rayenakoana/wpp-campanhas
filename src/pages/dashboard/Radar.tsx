@@ -97,7 +97,7 @@ function DateFilter({ preset, setPreset, customFrom, setCustomFrom, customTo, se
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
           background: 'var(--surface)', border: '1px solid var(--line)',
-          borderRadius: 10, padding: 12, width: 260,
+          borderRadius: 10, padding: 12, width: 300,
           boxShadow: '0 16px 40px rgba(0,0,0,.25)',
           backdropFilter: 'blur(16px)',
         }}>
@@ -116,9 +116,9 @@ function DateFilter({ preset, setPreset, customFrom, setCustomFrom, customTo, se
           <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.8px', color: 'var(--text-3)', marginBottom: 7, fontWeight: 600 }}>
             Período personalizado
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
-            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="input" style={{ fontSize: 12.5, padding: '7px 9px' }} />
-            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="input" style={{ fontSize: 12.5, padding: '7px 9px' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8, overflow: 'hidden' }}>
+            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="input" style={{ fontSize: 12.5, padding: '7px 9px', width: '100%', minWidth: 0, boxSizing: 'border-box' }} />
+            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="input" style={{ fontSize: 12.5, padding: '7px 9px', width: '100%', minWidth: 0, boxSizing: 'border-box' }} />
           </div>
           <button className="btn primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12.5 }}
             onClick={() => { if (customFrom && customTo) { setPreset('custom'); setOpen(false) } }}>
