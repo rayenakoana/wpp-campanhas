@@ -673,11 +673,18 @@ function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () 
 }
 
 // ── Biblioteca Meta ──────────────────────────────────────────────────────────
+
+// Cache em memória — evita re-fetch enquanto a página está aberta
+let _bibliotecaCache: LibTemplate[] | null = null
+let _bibliotecaCacheTs = 0
+const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutos
+
 interface LibTemplate {
   name: string
   category: string
   language: string
   components: any[]
+  body?: string
   id?: string
 }
 
@@ -719,12 +726,22 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
     }
 
     async function carregar() {
+      // Usa cache se ainda válido
+      const agora = Date.now()
+      if (_bibliotecaCache && (agora - _bibliotecaCacheTs) < CACHE_TTL_MS) {
+        if (!cancelado) {
+          setTemplates(_bibliotecaCache)
+          setLoading(false)
+        }
+        return
+      }
+
       setLoading(true)
       setErro(null)
       setTemplates([])
       try {
         let acumulado: LibTemplate[] = []
-        let url = `https://graph.facebook.com/v20.0/message_template_library?fields=name,category,language,components&limit=200&access_token=${META_TOKEN}`
+        let url = `https://graph.facebook.com/v20.0/message_template_library?fields=name,category,language,components,body&limit=200&access_token=${META_TOKEN}`
         let paginas = 0
         const MAX_PAGINAS = 5
 
@@ -735,9 +752,15 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
           if (json.error) throw new Error(json.error.message)
           acumulado = acumulado.concat(json.data ?? [])
           paginas++
-          if (!cancelado) setTemplates(deduplicar(acumulado))
+          const dedup = deduplicar(acumulado)
+          if (!cancelado) setTemplates(dedup)
           url = json.paging?.next ?? ''
         }
+
+        // Salva no cache
+        const final = deduplicar(acumulado)
+        _bibliotecaCache = final
+        _bibliotecaCacheTs = Date.now()
       } catch (err) {
         if (!cancelado) setErro(err instanceof Error ? err.message : 'Erro ao carregar biblioteca')
       } finally {
@@ -989,7 +1012,7 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
                     </div>
 
                     {/* Preview compacto */}
-                    <TemplatePreview components={t.components} compact />
+                    <TemplatePreview components={t.components} compact bodyFallback={t.body} />
                   </div>
                 )
               })}
