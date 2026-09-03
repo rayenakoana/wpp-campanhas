@@ -3,6 +3,14 @@ import { supabaseWpp } from '../lib/supabase'
 
 import { META_WABA_ID as WABA_ID, META_WPP_TOKEN as META_TOKEN } from '../lib/metaConfig'
 
+function normalizarStatus(s: string | undefined): string {
+  const v = (s ?? 'pending').toLowerCase()
+  if (v === 'approved') return 'approved'
+  if (v === 'rejected') return 'rejected'
+  if (v === 'disabled' || v === 'paused') return 'disabled'
+  return 'pending'
+}
+
 export interface TemplateOption {
   id: string
   meta_template_id: string | null
@@ -17,16 +25,6 @@ export interface TemplateOption {
 
 // Busca todos os templates direto da WABA via Graph API,
 // salva/atualiza no Supabase e retorna a lista unificada.
-
-// Mapeia status da Meta para valores aceitos pelo Supabase
-function normalizarStatus(s: string | undefined): string {
-  const v = (s ?? 'pending').toLowerCase()
-  if (v === 'approved') return 'approved'
-  if (v === 'rejected') return 'rejected'
-  if (v === 'disabled' || v === 'paused') return 'disabled'
-  return 'pending'
-}
-
 export function useTemplates(refreshKey = 0) {
   const [templates, setTemplates] = useState<TemplateOption[]>([])
   const [loading, setLoading] = useState(true)
