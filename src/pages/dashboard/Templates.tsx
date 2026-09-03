@@ -452,7 +452,6 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
   }
 
   // Inserir variável no cursor
-  const corpoRef = useState<HTMLTextAreaElement | null>(null)
   function inserirVariavel(v: string) {
     const el = document.getElementById('corpo-textarea') as HTMLTextAreaElement
     if (!el) { setCorpo(c => c + v); return }
