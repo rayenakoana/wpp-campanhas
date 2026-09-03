@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { META_WABA_ID as WABA_ID, META_WPP_TOKEN as META_TOKEN } from '../../lib/metaConfig'
 import { useTemplates } from '../../hooks/useTemplates'
 import { supabaseWpp } from '../../lib/supabase'
@@ -530,6 +531,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
 
 // ── Aba: Meus Templates ──────────────────────────────────────────────────────
 function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () => void; refreshKey?: number }) {
+  const navigate = useNavigate()
   const { templates, loading, error } = useTemplates(refreshKey)
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
@@ -667,7 +669,7 @@ function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () 
         <DrawerDetalhe
           template={carregandoDetalhe ? templateSelecionado : (templateDetalhe ?? templateSelecionado)}
           onClose={() => { setTemplateSelecionado(null); setTemplateDetalhe(null) }}
-          onUsarNaCampanha={() => {}}
+          onUsarNaCampanha={() => { navigate('/criar-campanha', { state: { template: templateDetalhe ?? templateSelecionado } }) }}
         />
       )}
     </>
