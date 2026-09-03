@@ -387,17 +387,51 @@ function DrawerDetalhe({ template, onClose, onUsarNaCampanha, modoLibrary, onAdi
   )
 }
 
-// ── Modal Novo Template ──────────────────────────────────────────────────────
+// ── Modal Novo Template — completo ──────────────────────────────────────────
 interface ModalNovoTemplateProps { onClose: () => void; onCriado: () => void }
 
+// Tipos de botão suportados
+type BtnTipo = 'URL' | 'PHONE' | 'QUICK_REPLY' | 'FLOW' | 'VOICE_CALL' | 'COPY_CODE' | 'OTP'
+interface BtnItem { id: number; tipo: BtnTipo; texto: string; url: string; tel: string; extra: string }
+
+// Tipo de cabeçalho
+type HeaderTipo = 'NONE' | 'TEXT' | 'IMAGE' | 'VIDEO' | 'GIF' | 'DOCUMENT' | 'LOCATION'
+
+const BTN_LABEL: Record<BtnTipo, string> = {
+  URL: 'Link (URL)', PHONE: 'Telefone', QUICK_REPLY: 'Resp. rápida',
+  FLOW: 'Flow', VOICE_CALL: 'Chamada WPP', COPY_CODE: 'Copy Code', OTP: 'OTP Autofill',
+}
+const BTN_COLOR: Record<BtnTipo, string> = {
+  URL: 'rgba(90,200,250,0.12)', PHONE: 'rgba(61,190,123,0.12)', QUICK_REPLY: 'rgba(232,25,44,0.10)',
+  FLOW: 'rgba(155,123,216,0.12)', VOICE_CALL: 'rgba(217,126,43,0.12)',
+  COPY_CODE: 'rgba(90,200,250,0.08)', OTP: 'rgba(155,123,216,0.10)',
+}
+const BTN_TEXT_COLOR: Record<BtnTipo, string> = {
+  URL: '#5AC8FA', PHONE: 'var(--green)', QUICK_REPLY: 'var(--red)',
+  FLOW: '#9B7BD8', VOICE_CALL: 'var(--amber)', COPY_CODE: '#5AC8FA', OTP: '#9B7BD8',
+}
+
 function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
-  const [nomeDisplay, setNomeDisplay] = useState('')
-  const [categoria, setCategoria] = useState('UTILITY')
-  const [corpo, setCorpo] = useState('')
-  const [rodape, setRodape] = useState('')
-  const [enviando, setEnviando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
-  const [preview, setPreview] = useState(false)
+  const [nomeDisplay, setNomeDisplay]   = useState('')
+  const [categoria, setCategoria]       = useState<'MARKETING'|'UTILITY'|'AUTHENTICATION'>('UTILITY')
+  const [idioma, setIdioma]             = useState('pt_BR')
+  const [headerTipo, setHeaderTipo]     = useState<HeaderTipo>('NONE')
+  const [headerTexto, setHeaderTexto]   = useState('')
+  const [headerLocNome, setHeaderLocNome]   = useState('')
+  const [headerLocEnd, setHeaderLocEnd]     = useState('')
+  const [headerLocLat, setHeaderLocLat]     = useState('')
+  const [headerLocLng, setHeaderLocLng]     = useState('')
+  const [corpo, setCorpo]               = useState('')
+  const [rodape, setRodape]             = useState('')
+  const [botoes, setBotoes]             = useState<BtnItem[]>([])
+  const [varCount, setVarCount]         = useState(3)
+  const [enviando, setEnviando]         = useState(false)
+  const [erro, setErro]                 = useState<string | null>(null)
+  const [mediaFile, setMediaFile]       = useState<File | null>(null)
+  const [secRec, setSecRec]             = useState(true)
+  const [expMin, setExpMin]             = useState(10)
+  const nextBtnId = useState(0)
+
   const nomeApi = normalizarNome(nomeDisplay)
 
   useEffect(() => {
@@ -406,40 +440,181 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  function inserirVariavel(v: string) { setCorpo((c) => c + v) }
+  // Ao trocar categoria, limpa botões e header incompatíveis
+  function mudarCategoria(cat: 'MARKETING'|'UTILITY'|'AUTHENTICATION') {
+    setCategoria(cat)
+    setBotoes([])
+    if (cat === 'AUTHENTICATION') {
+      setHeaderTipo('NONE')
+      setCorpo('')
+      setRodape('')
+    }
+  }
 
+  // Inserir variável no cursor
+  const corpoRef = useState<HTMLTextAreaElement | null>(null)
+  function inserirVariavel(v: string) {
+    const el = document.getElementById('corpo-textarea') as HTMLTextAreaElement
+    if (!el) { setCorpo(c => c + v); return }
+    const s = el.selectionStart, e = el.selectionEnd
+    const novo = el.value.slice(0, s) + v + el.value.slice(e)
+    setCorpo(novo)
+    setTimeout(() => { el.selectionStart = el.selectionEnd = s + v.length; el.focus() }, 0)
+  }
+
+  function addVariavel() {
+    setVarCount(n => n + 1)
+  }
+
+  // Botões helpers
+  function addBtn(tipo: BtnTipo) {
+    if (botoes.length >= 10) return
+    nextBtnId[0]++
+    setBotoes(prev => [...prev, { id: nextBtnId[0], tipo, texto: '', url: '', tel: '', extra: '' }])
+  }
+  function removeBtn(id: number) { setBotoes(prev => prev.filter(b => b.id !== id)) }
+  function updateBtn(id: number, field: keyof BtnItem, value: string) {
+    setBotoes(prev => prev.map(b => b.id === id ? { ...b, [field]: value } : b))
+  }
+
+  const urlCount    = botoes.filter(b => b.tipo === 'URL').length
+  const telCount    = botoes.filter(b => b.tipo === 'PHONE').length
+  const btnTotal    = botoes.length
+
+  // Extrair params posicionais do texto
   function extrairParams(texto: string) {
     const matches = texto.match(/\{\{(\d+)\}\}/g) ?? []
-    return [...new Set(matches)].map((m) => ({ type: 'text', text: m }))
+    const uniq = [...new Set(matches)]
+    return uniq.map(m => m.replace(/\{|\}/g, ''))
+  }
+
+  // Subir mídia via Resumable Upload API e retornar handle
+  async function uploadMedia(file: File): Promise<string> {
+    // 1. Iniciar sessão de upload
+    const startRes = await fetch(`https://graph.facebook.com/v20.0/app/uploads`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${META_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file_length: file.size, file_type: file.type, access_token: META_TOKEN }),
+    })
+    const startJson = await startRes.json()
+    if (startJson.error) throw new Error(startJson.error.message)
+    const sessionId = startJson.id
+
+    // 2. Fazer upload do arquivo
+    const upRes = await fetch(`https://graph.facebook.com/v20.0/${sessionId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `OAuth ${META_TOKEN}`,
+        'file_offset': '0',
+        'Content-Type': file.type,
+      },
+      body: file,
+    })
+    const upJson = await upRes.json()
+    if (upJson.error) throw new Error(upJson.error.message)
+    return upJson.h // handle
   }
 
   async function handleSubmit() {
     setErro(null)
     if (!nomeDisplay.trim()) { setErro('Dê um nome ao template.'); return }
-    if (!corpo.trim()) { setErro('Escreva o corpo da mensagem.'); return }
+    if (categoria !== 'AUTHENTICATION' && !corpo.trim()) { setErro('Escreva o corpo da mensagem.'); return }
+
     setEnviando(true)
     try {
-      const components: any[] = [
-        {
+      const components: any[] = []
+
+      // Cabeçalho
+      if (categoria !== 'AUTHENTICATION' && headerTipo !== 'NONE') {
+        if (headerTipo === 'TEXT') {
+          const params = extrairParams(headerTexto)
+          components.push({
+            type: 'HEADER', format: 'TEXT', text: headerTexto,
+            ...(params.length > 0 && { example: { header_text: [headerTexto.replace(/\{\{\d+\}\}/g, 'Exemplo')] } }),
+          })
+        } else if (headerTipo === 'LOCATION') {
+          components.push({ type: 'HEADER', format: 'LOCATION' })
+        } else {
+          // IMAGE, VIDEO, GIF, DOCUMENT — precisa de handle de upload
+          let handle = ''
+          if (mediaFile) {
+            handle = await uploadMedia(mediaFile)
+          }
+          components.push({
+            type: 'HEADER',
+            format: headerTipo === 'GIF' ? 'VIDEO' : headerTipo, // GIF é enviado como VIDEO
+            ...(handle ? { example: { header_handle: [handle] } } : {}),
+          })
+        }
+      }
+
+      // Corpo
+      if (categoria === 'AUTHENTICATION') {
+        components.push({
+          type: 'BODY',
+          add_security_recommendation: secRec,
+        })
+        if (expMin > 0) {
+          components.push({ type: 'FOOTER', code_expiration_minutes: expMin })
+        }
+      } else {
+        const params = extrairParams(corpo)
+        components.push({
           type: 'BODY',
           text: corpo.trim(),
-          ...(extrairParams(corpo).length > 0 && {
-            example: { body_text: [extrairParams(corpo).map((p) => p.text)] },
+          ...(params.length > 0 && {
+            example: { body_text: [params.map(() => 'Exemplo')] },
           }),
-        },
-      ]
-      if (rodape.trim()) components.push({ type: 'FOOTER', text: rodape.trim() })
+        })
+        if (rodape.trim()) {
+          components.push({ type: 'FOOTER', text: rodape.trim() })
+        }
+      }
 
-      const res = await fetch(`https://graph.facebook.com/v19.0/${WABA_ID}/message_templates`, {
+      // Botões
+      if (botoes.length > 0) {
+        const btnComponents = botoes.map(b => {
+          if (b.tipo === 'URL')         return { type: 'URL', text: b.texto, url: b.url }
+          if (b.tipo === 'PHONE')       return { type: 'PHONE_NUMBER', text: b.texto, phone_number: b.tel }
+          if (b.tipo === 'QUICK_REPLY') return { type: 'QUICK_REPLY', text: b.texto }
+          if (b.tipo === 'FLOW')        return { type: 'FLOW', text: b.texto, flow_id: b.extra, navigate_screen: 'FLOW_JSON' }
+          if (b.tipo === 'VOICE_CALL')  return { type: 'VOICE_CALL', text: b.texto }
+          if (b.tipo === 'COPY_CODE')   return { type: 'COPY_CODE', example: b.extra }
+          if (b.tipo === 'OTP')         return { type: 'OTP', otp_type: 'ONE_TAP', text: b.texto, supported_apps: b.extra ? [{ package_name: b.extra, signature_hash: '' }] : [] }
+          return null
+        }).filter(Boolean)
+        components.push({ type: 'BUTTONS', buttons: btnComponents })
+      }
+
+      const payload: any = { name: nomeApi, category: categoria, language: idioma, components }
+
+      // Localização: coordenadas só são passadas no envio, não na criação
+      // (a criação só define que o header é LOCATION)
+
+      const res = await fetch(`https://graph.facebook.com/v20.0/${WABA_ID}/message_templates`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${META_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nomeApi, category: categoria, language: 'pt_BR', components }),
+        body: JSON.stringify(payload),
       })
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error?.message ?? JSON.stringify(json.error))
 
+      // Salvar no Supabase
+      const bodyText = categoria === 'AUTHENTICATION'
+        ? `{{1}} é seu código de verificação.${secRec ? ' Para sua segurança, não compartilhe este código.' : ''}`
+        : corpo.trim()
+
       const { error: dbError } = await supabaseWpp.from('templates').upsert(
-        { meta_template_id: json.id ?? null, meta_template_name: nomeApi, status: normalizarStatus(json.status), category: categoria.toLowerCase(), language: 'pt_BR', body: corpo.trim(), body_text: corpo.trim(), synced_at: new Date().toISOString() },
+        {
+          meta_template_id: json.id ?? null,
+          meta_template_name: nomeApi,
+          status: normalizarStatus(json.status),
+          category: categoria.toLowerCase(),
+          language: idioma,
+          body: bodyText,
+          body_text: bodyText,
+          synced_at: new Date().toISOString(),
+        },
         { onConflict: 'meta_template_name' }
       )
       if (dbError) throw dbError
@@ -451,81 +626,319 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
     }
   }
 
-  const previewComponents = [
-    ...(corpo ? [{ type: 'BODY', text: corpo }] : []),
-    ...(rodape ? [{ type: 'FOOTER', text: rodape }] : []),
-  ]
+  // Preview ao vivo
+  const previewComponents: any[] = []
+  if (categoria === 'AUTHENTICATION') {
+    previewComponents.push({ type: 'BODY', text: `*123456* é seu código de verificação.${secRec ? '\nPara sua segurança, não compartilhe este código.' : ''}` })
+    if (expMin > 0) previewComponents.push({ type: 'FOOTER', text: `Este código expira em ${expMin} minutos.` })
+  } else {
+    if (headerTipo === 'TEXT' && headerTexto) previewComponents.push({ type: 'HEADER', format: 'TEXT', text: headerTexto })
+    else if (headerTipo !== 'NONE' && headerTipo !== 'LOCATION') previewComponents.push({ type: 'HEADER', format: headerTipo })
+    else if (headerTipo === 'LOCATION') previewComponents.push({ type: 'HEADER', format: 'LOCATION', loc_nome: headerLocNome })
+    if (corpo) previewComponents.push({ type: 'BODY', text: corpo })
+    if (rodape) previewComponents.push({ type: 'FOOTER', text: rodape })
+  }
+  if (botoes.length > 0) {
+    previewComponents.push({ type: 'BUTTONS', buttons: botoes.map(b => ({ type: b.tipo === 'QUICK_REPLY' ? 'QUICK_REPLY' : b.tipo === 'URL' ? 'URL' : b.tipo === 'PHONE' ? 'PHONE_NUMBER' : b.tipo, text: b.texto || BTN_LABEL[b.tipo] })) })
+  }
+
+  const canSubmit = !enviando && !!nomeDisplay.trim() && (categoria === 'AUTHENTICATION' || !!corpo.trim())
+
+  // Estilo dos botões de tipo de cabeçalho
+  const hBtnStyle = (t: HeaderTipo): React.CSSProperties => ({
+    padding: '5px 12px', borderRadius: 18, cursor: 'pointer',
+    border: `1px solid ${headerTipo === t ? 'var(--red)' : 'var(--line)'}`,
+    background: headerTipo === t ? 'rgba(232,25,44,0.10)' : 'transparent',
+    color: headerTipo === t ? 'var(--red)' : 'var(--text-2)',
+    fontSize: 12, fontWeight: headerTipo === t ? 600 : 500,
+    fontFamily: 'Inter', display: 'inline-flex', alignItems: 'center', gap: 5, transition: 'all .15s',
+  })
+
+  // Estilo dos cards de categoria
+  const catCardStyle = (c: string): React.CSSProperties => ({
+    padding: '9px 12px', borderRadius: 9, cursor: 'pointer',
+    border: `1.5px solid ${categoria === c ? 'var(--red)' : 'var(--line)'}`,
+    background: categoria === c ? 'rgba(232,25,44,0.08)' : 'transparent',
+    textAlign: 'left', width: '100%', transition: 'all .15s',
+  })
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
-      <div className="panel" style={{ width: 680, maxWidth: '96vw', padding: 32, maxHeight: '90vh', overflowY: 'auto', background: 'var(--surface)', backdropFilter: 'blur(24px)' }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+    <>
+      {/* Overlay */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }} />
+
+      {/* Drawer full-height */}
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 301,
+        width: '100%', maxWidth: 1100,
+        background: 'var(--bg)',
+        borderLeft: '1px solid rgba(255,255,255,0.09)',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Head */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, background: 'var(--surface)' }}>
           <div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: '0.01em' }}>Novo template</div>
-            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>Submetido para aprovação da Meta via API</div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: '0.02em' }}>Novo Template</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>Submetido para aprovação da Meta via API · WABA {WABA_ID}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 22, cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 20, cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}>×</button>
         </div>
 
-        {erro && (
-          <div style={{ padding: '12px 16px', background: 'rgba(232,25,44,0.1)', border: '1px solid rgba(232,25,44,0.3)', borderRadius: 8, fontSize: 13, color: '#f28c94', marginBottom: 20, lineHeight: 1.5 }}>{erro}</div>
-        )}
+        {/* Body — 2 colunas */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', flex: 1, overflow: 'hidden' }}>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>Nome do template</label>
-            <input className="input" value={nomeDisplay} onChange={(e) => setNomeDisplay(e.target.value)} placeholder="Ex: reativacao_base_fria" autoFocus />
-            {nomeDisplay && <div className="hint" style={{ fontFamily: 'monospace', fontSize: 11 }}>→ {nomeApi}</div>}
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>Categoria</label>
-            <select className="input" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-              {CATEGORIAS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-            <div className="hint">{CATEGORIAS.find((c) => c.value === categoria)?.desc}</div>
-          </div>
-        </div>
+          {/* Formulário */}
+          <div style={{ overflowY: 'auto', padding: '22px 26px' }}>
 
-        <div className="field">
-          <label>Corpo da mensagem</label>
-          <textarea className="input" value={corpo} onChange={(e) => setCorpo(e.target.value)} rows={5} placeholder="Olá {{1}}! Vimos que você demonstrou interesse..." />
-          <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: 'var(--text-3)', marginRight: 4 }}>Variáveis:</span>
-            {['{{1}}', '{{2}}', '{{3}}'].map((v) => (
-              <span key={v} className="var-chip" onClick={() => inserirVariavel(v)}>{v}</span>
-            ))}
-            <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 8 }}>{corpo.length}/1024</span>
-          </div>
-        </div>
+            {erro && (
+              <div style={{ padding: '11px 14px', background: 'rgba(232,25,44,0.10)', border: '1px solid rgba(232,25,44,0.28)', borderRadius: 8, fontSize: 13, color: '#f28c94', marginBottom: 18, lineHeight: 1.5 }}>{erro}</div>
+            )}
 
-        <div className="field">
-          <label>Rodapé <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(opcional)</span></label>
-          <input className="input" value={rodape} onChange={(e) => setRodape(e.target.value)} placeholder="Ex: Responda PARAR para cancelar" maxLength={60} />
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <button type="button" className="btn" style={{ fontSize: 12 }} onClick={() => setPreview((v) => !v)}>
-            {preview ? 'Ocultar preview' : 'Ver preview'}
-          </button>
-          {preview && previewComponents.length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              <TemplatePreview components={previewComponents} />
+            {/* Identificação */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--text-3)', marginBottom: 10, paddingBottom: 7, borderBottom: '1px solid var(--line-soft)' }}>Identificação</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>Nome do template</label>
+                  <input className="input" value={nomeDisplay} onChange={e => setNomeDisplay(e.target.value)} placeholder="Ex: boas_vindas_paraguai" autoFocus />
+                  {nomeDisplay && <div className="hint" style={{ fontFamily: 'monospace', fontSize: 11 }}>→ {nomeApi}</div>}
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>Idioma</label>
+                  <select className="input" value={idioma} onChange={e => setIdioma(e.target.value)}>
+                    <option value="pt_BR">Português (BR) ✓</option>
+                    <option value="pt_PT">Português (PT)</option>
+                    <option value="en_US">English (US)</option>
+                    <option value="es">Español</option>
+                  </select>
+                  <div className="hint">⚠️ Use sempre pt_BR, nunca pt_PT</div>
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Categoria */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--text-3)', marginBottom: 10, paddingBottom: 7, borderBottom: '1px solid var(--line-soft)' }}>Categoria</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 7 }}>
+                {[
+                  { v: 'MARKETING', l: 'Marketing', d: 'Promoções, ofertas, engajamento' },
+                  { v: 'UTILITY', l: 'Utilidade', d: 'Confirmações, lembretes, alertas' },
+                  { v: 'AUTHENTICATION', l: 'Autenticação', d: 'OTP, verificação de identidade' },
+                ].map(c => (
+                  <button key={c.v} style={catCardStyle(c.v)} onClick={() => mudarCategoria(c.v as any)}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', display: 'block' }}>{c.l}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2, display: 'block' }}>{c.d}</span>
+                  </button>
+                ))}
+              </div>
+              {categoria === 'AUTHENTICATION' && (
+                <div style={{ marginTop: 10, padding: '9px 13px', borderRadius: 8, background: 'rgba(155,123,216,0.08)', border: '1px solid rgba(155,123,216,0.2)', fontSize: 11, color: '#c4aff0', lineHeight: 1.5 }}>
+                  ⚠️ Templates de Autenticação têm corpo de texto fixo definido pela Meta. Você pode ativar recomendação de segurança e definir tempo de expiração. Botões disponíveis: Copy Code, OTP Autofill.
+                </div>
+              )}
+            </div>
+
+            {/* Autenticação — opções específicas */}
+            {categoria === 'AUTHENTICATION' && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--text-3)', marginBottom: 10, paddingBottom: 7, borderBottom: '1px solid var(--line-soft)' }}>Opções de Autenticação</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <input type="checkbox" id="sec-rec" checked={secRec} onChange={e => setSecRec(e.target.checked)} style={{ accentColor: 'var(--red)', width: 14, height: 14 }} />
+                  <label htmlFor="sec-rec" style={{ fontSize: 13, cursor: 'pointer' }}>Incluir recomendação de segurança</label>
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>Tempo de expiração (minutos, 0 = sem expiração)</label>
+                  <input className="input" type="number" min={0} max={90} value={expMin} onChange={e => setExpMin(Number(e.target.value))} style={{ width: 120 }} />
+                </div>
+              </div>
+            )}
+
+            {/* Cabeçalho — só para não-auth */}
+            {categoria !== 'AUTHENTICATION' && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--text-3)', marginBottom: 10, paddingBottom: 7, borderBottom: '1px solid var(--line-soft)' }}>
+                  Cabeçalho <span style={{ fontSize: 9, fontWeight: 400, letterSpacing: 0, textTransform: 'none' as const, color: 'var(--text-3)' }}>(opcional)</span>
+                </div>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const }}>
+                  {(['NONE','TEXT','IMAGE','VIDEO','GIF','DOCUMENT','LOCATION'] as HeaderTipo[]).map(t => (
+                    <button key={t} style={hBtnStyle(t)} onClick={() => setHeaderTipo(t)}>
+                      {t === 'NONE' ? 'Nenhum' : t === 'TEXT' ? 'Texto' : t === 'IMAGE' ? 'Imagem' : t === 'VIDEO' ? 'Vídeo' : t === 'GIF' ? 'GIF' : t === 'DOCUMENT' ? 'Documento' : 'Localização'}
+                    </button>
+                  ))}
+                </div>
+
+                {headerTipo === 'TEXT' && (
+                  <div style={{ marginTop: 10 }}>
+                    <input className="input" value={headerTexto} onChange={e => setHeaderTexto(e.target.value)} placeholder="Texto do cabeçalho (máx. 60 caracteres)" maxLength={60} />
+                    <div className="hint">{headerTexto.length}/60 caracteres</div>
+                  </div>
+                )}
+                {(headerTipo === 'IMAGE' || headerTipo === 'VIDEO' || headerTipo === 'GIF' || headerTipo === 'DOCUMENT') && (
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ border: '1.5px dashed var(--line)', borderRadius: 9, padding: 20, textAlign: 'center' as const, cursor: 'pointer' }}
+                      onClick={() => document.getElementById('media-file-input')?.click()}>
+                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+                        {mediaFile ? `✓ ${mediaFile.name}` : `Clique para enviar ${headerTipo === 'IMAGE' ? 'imagem (JPG/PNG · 5MB)' : headerTipo === 'VIDEO' ? 'vídeo (MP4 · 16MB)' : headerTipo === 'GIF' ? 'GIF como MP4 · 3.5MB' : 'documento (PDF · 100MB)'}`}
+                      </div>
+                    </div>
+                    <input id="media-file-input" type="file" style={{ display: 'none' }}
+                      accept={headerTipo === 'IMAGE' ? 'image/jpeg,image/png' : headerTipo === 'DOCUMENT' ? 'application/pdf' : 'video/mp4'}
+                      onChange={e => setMediaFile(e.target.files?.[0] ?? null)} />
+                    <div className="hint">O arquivo será enviado à Meta via Resumable Upload API antes da criação do template.</div>
+                  </div>
+                )}
+                {headerTipo === 'LOCATION' && (
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ background: 'linear-gradient(135deg,#1a2a1a,#0d1a0d)', borderRadius: '9px 9px 0 0', height: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📍</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: 10, background: 'var(--surface-2)', borderRadius: '0 0 9px 9px', border: '1px solid var(--line)' }}>
+                      <div><div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 3 }}>Nome do local</div><input className="input" value={headerLocNome} onChange={e => setHeaderLocNome(e.target.value)} placeholder="Ex: Escritório CS" /></div>
+                      <div><div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 3 }}>Endereço</div><input className="input" value={headerLocEnd} onChange={e => setHeaderLocEnd(e.target.value)} placeholder="Rua, número, cidade" /></div>
+                      <div><div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 3 }}>Latitude</div><input className="input" value={headerLocLat} onChange={e => setHeaderLocLat(e.target.value)} placeholder="-23.5489" /></div>
+                      <div><div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 3 }}>Longitude</div><input className="input" value={headerLocLng} onChange={e => setHeaderLocLng(e.target.value)} placeholder="-46.6388" /></div>
+                    </div>
+                    <div className="hint">Disponível para Utility e Marketing. Abre o app de mapas do usuário ao tocar.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Corpo — só para não-auth */}
+            {categoria !== 'AUTHENTICATION' && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--text-3)', marginBottom: 10, paddingBottom: 7, borderBottom: '1px solid var(--line-soft)' }}>Corpo da mensagem</div>
+                <textarea id="corpo-textarea" className="input" value={corpo} onChange={e => setCorpo(e.target.value)} rows={5}
+                  placeholder="Olá {{1}}! Vimos que você demonstrou interesse na Imersão Paraguai. Temos uma condição especial até {{2}}." />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 }}>
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const, alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Variáveis:</span>
+                    {Array.from({ length: varCount }, (_, i) => `{{${i + 1}}}`).map(v => (
+                      <span key={v} className="var-chip" onClick={() => inserirVariavel(v)}>{v}</span>
+                    ))}
+                    <span className="var-chip" style={{ color: 'var(--green)', borderColor: 'rgba(61,190,123,0.3)', cursor: 'pointer' }} onClick={addVariavel}>+ {`{{${varCount + 1}}}`}</span>
+                  </div>
+                  <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{corpo.length}/1024</span>
+                </div>
+                <div className="hint">Use {`{{1}}`}, {`{{2}}`}... para nome, data, produto, valor, etc.</div>
+              </div>
+            )}
+
+            {/* Rodapé — só para não-auth */}
+            {categoria !== 'AUTHENTICATION' && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--text-3)', marginBottom: 10, paddingBottom: 7, borderBottom: '1px solid var(--line-soft)' }}>
+                  Rodapé <span style={{ fontSize: 9, fontWeight: 400, letterSpacing: 0, textTransform: 'none' as const, color: 'var(--text-3)' }}>(opcional)</span>
+                </div>
+                <input className="input" value={rodape} onChange={e => setRodape(e.target.value)} maxLength={60} placeholder="Ex: Clique em Parar para cancelar as mensagens" />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 3 }}><span style={{ fontSize: 10, color: 'var(--text-3)' }}>{rodape.length}/60</span></div>
+                <div className="hint">Recomendado pela Meta para manter a saúde do número.</div>
+              </div>
+            )}
+
+            {/* Botões */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--text-3)', marginBottom: 10, paddingBottom: 7, borderBottom: '1px solid var(--line-soft)' }}>
+                Botões <span style={{ fontSize: 9, fontWeight: 400, letterSpacing: 0, textTransform: 'none' as const }}>até 10 total</span>
+              </div>
+
+              {/* Lista de botões adicionados */}
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 7, marginBottom: 10 }}>
+                {botoes.map(b => (
+                  <div key={b.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: BTN_COLOR[b.tipo], color: BTN_TEXT_COLOR[b.tipo], whiteSpace: 'nowrap' as const }}>{BTN_LABEL[b.tipo]}</span>
+                      <input placeholder="Texto do botão (máx. 25 chars)" maxLength={25} value={b.texto} onChange={e => updateBtn(b.id, 'texto', e.target.value)}
+                        style={{ flex: 1, border: 'none', background: 'transparent', color: 'var(--text)', fontSize: 12, fontFamily: 'Inter', outline: 'none' }} />
+                      <button onClick={() => removeBtn(b.id)} style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
+                    </div>
+                    {b.tipo === 'URL' && <input placeholder="https://costurandosucesso.com/..." value={b.url} onChange={e => updateBtn(b.id, 'url', e.target.value)} style={{ width: '100%', background: 'var(--bg)', border: 'none', borderTop: '1px solid var(--line-soft)', color: 'var(--text)', fontSize: 12, padding: '7px 11px', fontFamily: 'Inter', outline: 'none' }} />}
+                    {b.tipo === 'PHONE' && <input placeholder="+55 11 99999-9999" value={b.tel} onChange={e => updateBtn(b.id, 'tel', e.target.value)} style={{ width: '100%', background: 'var(--bg)', border: 'none', borderTop: '1px solid var(--line-soft)', color: 'var(--text)', fontSize: 12, padding: '7px 11px', fontFamily: 'Inter', outline: 'none' }} />}
+                    {b.tipo === 'FLOW' && <input placeholder="Flow ID (ex: 1234567890123456)" value={b.extra} onChange={e => updateBtn(b.id, 'extra', e.target.value)} style={{ width: '100%', background: 'var(--bg)', border: 'none', borderTop: '1px solid var(--line-soft)', color: 'var(--text)', fontSize: 12, padding: '7px 11px', fontFamily: 'Inter', outline: 'none' }} />}
+                    {b.tipo === 'COPY_CODE' && <input placeholder="Código a copiar (máx. 15 chars)" maxLength={15} value={b.extra} onChange={e => updateBtn(b.id, 'extra', e.target.value)} style={{ width: '100%', background: 'var(--bg)', border: 'none', borderTop: '1px solid var(--line-soft)', color: 'var(--text)', fontSize: 12, padding: '7px 11px', fontFamily: 'Inter', outline: 'none' }} />}
+                    {b.tipo === 'OTP' && <input placeholder="Package name Android para autofill" value={b.extra} onChange={e => updateBtn(b.id, 'extra', e.target.value)} style={{ width: '100%', background: 'var(--bg)', border: 'none', borderTop: '1px solid var(--line-soft)', color: 'var(--text)', fontSize: 12, padding: '7px 11px', fontFamily: 'Inter', outline: 'none' }} />}
+                  </div>
+                ))}
+              </div>
+
+              {/* Botões para adicionar — contextual por categoria */}
+              {btnTotal < 10 && (
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const }}>
+                  {categoria !== 'AUTHENTICATION' && <>
+                    <button className="btn" style={{ fontSize: 11, padding: '5px 11px', opacity: urlCount >= 2 ? 0.35 : 1 }} disabled={urlCount >= 2} onClick={() => addBtn('URL')}>+ Link (URL)</button>
+                    <button className="btn" style={{ fontSize: 11, padding: '5px 11px', opacity: telCount >= 1 ? 0.35 : 1 }} disabled={telCount >= 1} onClick={() => addBtn('PHONE')}>+ Telefone</button>
+                    <button className="btn" style={{ fontSize: 11, padding: '5px 11px' }} onClick={() => addBtn('QUICK_REPLY')}>+ Resp. rápida</button>
+                    <button className="btn" style={{ fontSize: 11, padding: '5px 11px' }} onClick={() => addBtn('FLOW')}>+ Flow</button>
+                    <button className="btn" style={{ fontSize: 11, padding: '5px 11px' }} onClick={() => addBtn('VOICE_CALL')}>+ Chamada WPP</button>
+                  </>}
+                  {categoria === 'AUTHENTICATION' && <>
+                    <button className="btn" style={{ fontSize: 11, padding: '5px 11px' }} onClick={() => addBtn('COPY_CODE')}>+ Copy Code</button>
+                    <button className="btn" style={{ fontSize: 11, padding: '5px 11px' }} onClick={() => addBtn('OTP')}>+ OTP Autofill</button>
+                  </>}
+                </div>
+              )}
+              <div className="hint" style={{ marginTop: 7 }}>
+                {btnTotal >= 4 ? '⚠️ Mais de 3 botões: aparecerão 2 + "Ver opções". Não suportado no WhatsApp Desktop.' : 'Dica: inclua "Parar de receber mensagens" (Resp. rápida) — recomendado pela Meta.'}
+              </div>
+            </div>
+
+            {/* Info */}
+            <div style={{ padding: '10px 13px', background: 'rgba(217,126,43,0.08)', border: '1px solid rgba(217,126,43,0.18)', borderRadius: 8, fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
+              <b>Aprovação:</b> Marketing costuma ser aprovado em segundos. Utilidade pode levar até 24h. Autenticação é aprovado automaticamente se seguir as regras da Meta.
+            </div>
+
+          </div>{/* /form */}
+
+          {/* Preview */}
+          <div style={{ overflowY: 'auto', padding: '18px 20px', background: 'var(--surface)', display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'var(--text-3)' }}>Preview ao vivo</div>
+
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div style={{ background: 'var(--surface-2)', padding: '9px 13px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--line-soft)' }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff', flexShrink: 0 }}>CS</div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>Costurando Sucesso</div>
+                  <div style={{ fontSize: 9, color: 'var(--text-3)' }}>Conta comercial verificada</div>
+                </div>
+              </div>
+              <div style={{ background: 'var(--bubble-bg, #0B1A13)', padding: '14px 12px', minHeight: 200, display: 'flex', flexDirection: 'column' as const }}>
+                {(previewComponents.some(c => c.type === 'BODY') || previewComponents.some(c => c.type === 'HEADER')) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end' }}>
+                    <TemplatePreview components={previewComponents} compact />
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', minHeight: 180, textAlign: 'center' as const, gap: 7, color: 'var(--text-3)', fontSize: 12 }}>
+                    Preencha o formulário para ver o preview
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Meta info */}
+            <div style={{ padding: '11px 13px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line-soft)', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.65 }}>
+              <b>Nome:</b> {nomeDisplay ? nomeApi : '—'}<br />
+              <b>Categoria:</b> {categoria === 'MARKETING' ? 'Marketing' : categoria === 'UTILITY' ? 'Utilidade' : 'Autenticação'}<br />
+              <b>Idioma:</b> {idioma}<br />
+              <b>Variáveis:</b> {extrairParams(corpo).length}<br />
+              <b>Botões:</b> {botoes.length}
+            </div>
+          </div>
+
+        </div>{/* /body */}
+
+        {/* Footer */}
+        <div style={{ padding: '12px 24px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: 'var(--surface)' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            Idioma: <b>{idioma}</b> · Categoria: <b>{categoria === 'MARKETING' ? 'Marketing' : categoria === 'UTILITY' ? 'Utilidade' : 'Autenticação'}</b>
+          </div>
+          <div style={{ display: 'flex', gap: 9 }}>
+            <button className="btn" onClick={onClose}>Cancelar</button>
+            <button className="btn primary" disabled={!canSubmit} onClick={handleSubmit}>
+              {enviando ? 'Submetendo à Meta...' : 'Submeter para aprovação →'}
+            </button>
+          </div>
         </div>
 
-        <div style={{ padding: '12px 16px', background: 'rgba(201,160,23,0.08)', border: '1px solid rgba(201,160,23,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 20 }}>
-          A Meta pode levar de alguns minutos a 24h para aprovar. Templates <b>MARKETING</b> têm taxa por envio; <b>UTILITY</b> é gratuito dentro da janela de 24h.
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button type="button" className="btn" onClick={onClose}>Cancelar</button>
-          <button type="button" className="btn primary" disabled={enviando || !nomeDisplay.trim() || !corpo.trim()} onClick={handleSubmit}>
-            {enviando ? 'Submetendo à Meta...' : 'Submeter para aprovação'}
-          </button>
-        </div>
       </div>
-    </div>
+    </>
   )
 }
 
