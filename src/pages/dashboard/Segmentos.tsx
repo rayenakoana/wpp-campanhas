@@ -88,7 +88,7 @@ function ModalNovoSegmento({ onClose, onSalvo }: ModalNovoSegmentoProps) {
     >
       <div
         className="panel"
-        style={{ width: 480, maxWidth: '95vw', padding: 28 }}
+        style={{ width: 480, maxWidth: '95vw', padding: 28, background: 'var(--surface)', backdropFilter: 'blur(24px)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

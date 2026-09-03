@@ -326,7 +326,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main style={{ padding: '28px 40px 72px', flex: 1, overflowY: 'auto' }}>
+        <main style={{ padding: '28px 40px 72px', flex: 1, overflowY: 'auto', overflowX: 'visible' }}>
           {children}
         </main>
       </div>
