@@ -104,7 +104,7 @@ function ModalNovoSegmento({ onClose, onSalvo }: ModalNovoSegmentoProps) {
         </div>
 
         {erro && (
-          <div style={{ padding: '10px 14px', background: 'rgba(232,25,44,0.1)', border: '1px solid rgba(232,25,44,0.3)', borderRadius: 8, fontSize: 13, color: '#f28c94', marginBottom: 16 }}>
+          <div style={{ padding: '10px 14px', background: 'rgba(232,25,44,0.1)', border: '1px solid rgba(232,25,44,0.3)', borderRadius: 8, fontSize: 13, color: 'var(--danger)', marginBottom: 16 }}>
             {erro}
           </div>
         )}
@@ -289,7 +289,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
             <div style={{ padding: 24, fontSize: 13, color: 'var(--text-2)' }}>Carregando leads...</div>
           )}
           {error && (
-            <div style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>Erro: {error}</div>
+            <div style={{ padding: 24, fontSize: 13, color: 'var(--danger)' }}>Erro: {error}</div>
           )}
           {!loading && !error && leadsFiltrados.length === 0 && (
             <div style={{ padding: 24, fontSize: 13, color: 'var(--text-3)' }}>
@@ -358,7 +358,7 @@ function TabTodosLeads() {
         <div style={{ padding: 24, fontSize: 13, color: 'var(--text-2)' }}>Carregando leads...</div>
       )}
       {error && (
-        <div style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>Erro: {error}</div>
+        <div style={{ padding: 24, fontSize: 13, color: 'var(--danger)' }}>Erro: {error}</div>
       )}
       {!loading && !error && (
         <div style={{overflowX:'auto',width:'100%'}}>
@@ -472,7 +472,7 @@ export default function Segmentos() {
             </div>
           )}
           {error && (
-            <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>
+            <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--danger)' }}>
               Não foi possível carregar os segmentos: {error}
             </div>
           )}

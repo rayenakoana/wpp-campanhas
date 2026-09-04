@@ -185,7 +185,7 @@ function ModalEditar({ usuario, onClose, onSalvo }: { usuario: UsuarioComPapel &
           <SeletorPapel papel={papel} onChange={setPapel} />
 
           {sucessoReenvio && (
-            <div style={{ padding: '9px 13px', background: 'rgba(61,190,123,0.1)', border: '1px solid rgba(61,190,123,0.3)', borderRadius: 8, fontSize: 12.5, color: '#8fe0b6', marginBottom: 14, letterSpacing: '0.01em' }}>
+            <div style={{ padding: '9px 13px', background: 'rgba(61,190,123,0.1)', border: '1px solid rgba(61,190,123,0.3)', borderRadius: 8, fontSize: 12.5, color: 'var(--green)', marginBottom: 14, letterSpacing: '0.01em' }}>
               Convite reenviado com sucesso!
             </div>
           )}
@@ -243,7 +243,7 @@ function ModalBase({ titulo, subtitulo, onClose, children }: { titulo: string; s
 
 function MsgErro({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ padding: '10px 14px', background: 'rgba(232,25,44,0.1)', border: '1px solid rgba(232,25,44,0.3)', borderRadius: 8, fontSize: 13, color: '#f28c94', marginBottom: 16 }}>
+    <div style={{ padding: '10px 14px', background: 'rgba(232,25,44,0.1)', border: '1px solid rgba(232,25,44,0.3)', borderRadius: 8, fontSize: 13, color: 'var(--danger)', marginBottom: 16 }}>
       {children}
     </div>
   )
@@ -299,7 +299,7 @@ export default function Configuracoes() {
       )}
 
       {sucesso && (
-        <div style={{ padding: '12px 16px', marginBottom: 16, background: 'rgba(61,190,123,0.1)', border: '1px solid rgba(61,190,123,0.3)', borderRadius: 10, fontSize: 13, color: '#8fe0b6', letterSpacing: '0.01em' }}>
+        <div style={{ padding: '12px 16px', marginBottom: 16, background: 'rgba(61,190,123,0.1)', border: '1px solid rgba(61,190,123,0.3)', borderRadius: 10, fontSize: 13, color: 'var(--green)', letterSpacing: '0.01em' }}>
           {sucesso}
         </div>
       )}
@@ -312,7 +312,7 @@ export default function Configuracoes() {
             <div className="config-desc">Quem pode acessar o app e com qual papel.</div>
 
             {loading && <p style={{ fontSize: 13, color: 'var(--text-2)' }}>Carregando...</p>}
-            {error && <p style={{ fontSize: 13, color: '#f28c94' }}>Erro: {error}</p>}
+            {error && <p style={{ fontSize: 13, color: 'var(--danger)' }}>Erro: {error}</p>}
 
             {/* Usuário logado */}
             <div className="user-row">

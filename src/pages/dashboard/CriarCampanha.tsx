@@ -292,12 +292,12 @@ export default function CriarCampanha() {
   return (
     <div>
       {sucesso && (
-        <div className="panel" style={{ padding: 14, marginBottom: 16, fontSize: 13, color: '#8fe0b6', borderColor: 'rgba(61,190,123,0.3)', background: 'rgba(61,190,123,0.08)' }}>
+        <div className="panel" style={{ padding: 14, marginBottom: 16, fontSize: 13, color: 'var(--green)', borderColor: 'rgba(61,190,123,0.3)', background: 'rgba(61,190,123,0.08)' }}>
           {sucesso}
         </div>
       )}
       {erro && (
-        <div className="panel" style={{ padding: 14, marginBottom: 16, fontSize: 13, color: '#f28c94', borderColor: 'rgba(232,25,44,0.3)', background: 'rgba(232,25,44,0.08)' }}>
+        <div className="panel" style={{ padding: 14, marginBottom: 16, fontSize: 13, color: 'var(--danger)', borderColor: 'rgba(232,25,44,0.3)', background: 'rgba(232,25,44,0.08)' }}>
           {erro}
         </div>
       )}

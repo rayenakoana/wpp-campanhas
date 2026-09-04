@@ -206,7 +206,7 @@ function TemplatePreview({ components, compact = false, bodyFallback }: Template
           borderRadius: i === buttons.buttons.length - 1 ? '0 0 10px 10px' : 0,
           padding: compact ? '7px 12px' : '9px 15px',
           fontSize: compact ? 11 : 12.5,
-          color: '#5AC8FA',
+          color: 'var(--blue)',
           textAlign: 'center' as const,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         }}>
@@ -691,7 +691,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
           <div style={{ overflowY: 'auto', padding: '22px 26px' }}>
 
             {erro && (
-              <div style={{ padding: '11px 14px', background: 'rgba(232,25,44,0.10)', border: '1px solid rgba(232,25,44,0.28)', borderRadius: 8, fontSize: 13, color: '#f28c94', marginBottom: 18, lineHeight: 1.5 }}>{erro}</div>
+              <div style={{ padding: '11px 14px', background: 'rgba(232,25,44,0.10)', border: '1px solid rgba(232,25,44,0.28)', borderRadius: 8, fontSize: 13, color: 'var(--danger)', marginBottom: 18, lineHeight: 1.5 }}>{erro}</div>
             )}
 
             {/* Identificação */}
@@ -732,7 +732,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
                 ))}
               </div>
               {categoria === 'AUTHENTICATION' && (
-                <div style={{ marginTop: 10, padding: '9px 13px', borderRadius: 8, background: 'rgba(155,123,216,0.08)', border: '1px solid rgba(155,123,216,0.2)', fontSize: 11, color: '#c4aff0', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 10, padding: '9px 13px', borderRadius: 8, background: 'rgba(155,123,216,0.08)', border: '1px solid rgba(155,123,216,0.2)', fontSize: 11, color: 'var(--blue)', lineHeight: 1.5 }}>
                   Templates de Autenticação têm corpo de texto fixo definido pela Meta. Você pode ativar recomendação de segurança e definir tempo de expiração. Botões disponíveis: Copy Code, OTP Autofill.
                 </div>
               )}
@@ -1032,7 +1032,7 @@ function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () 
       </div>
 
       {loading && <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--text-2)' }}>Carregando templates...</div>}
-      {error && <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>Não foi possível carregar: {error}</div>}
+      {error && <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--danger)' }}>Não foi possível carregar: {error}</div>}
 
       {!loading && !error && (
         <div style={{overflowX:'auto',width:'100%'}}>
@@ -1370,7 +1370,7 @@ function BibliotecaMeta({ onAdicionado, meusTemplatesNomes }: { onAdicionado: ()
         </div>
 
         {erro && (
-          <div className="panel" style={{ padding: '16px 20px', fontSize: 13, color: '#f28c94', marginBottom: 16 }}>
+          <div className="panel" style={{ padding: '16px 20px', fontSize: 13, color: 'var(--danger)', marginBottom: 16 }}>
             {erro}
             <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
               A biblioteca de modelos pode exigir permissões adicionais no token. Tente recarregar ou verifique o token de acesso.
@@ -1500,7 +1500,7 @@ export default function Templates() {
       </div>
 
       {sucesso && (
-        <div style={{ padding: '12px 16px', background: 'rgba(61,190,123,0.1)', border: '1px solid rgba(61,190,123,0.3)', borderRadius: 10, fontSize: 13, color: '#8fe0b6', marginBottom: 16 }}>
+        <div style={{ padding: '12px 16px', background: 'rgba(61,190,123,0.1)', border: '1px solid rgba(61,190,123,0.3)', borderRadius: 10, fontSize: 13, color: 'var(--green)', marginBottom: 16 }}>
           {sucesso}
         </div>
       )}

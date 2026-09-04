@@ -395,7 +395,7 @@ export default function Campanhas() {
       )}
 
       {error && (
-        <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>
+        <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--danger)' }}>
           Não foi possível carregar as campanhas: {error}
         </div>
       )}

@@ -47,10 +47,11 @@ function DateFilter({ preset, setPreset, customFrom, setCustomFrom, customTo, se
       </button>
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 50,
-          background: 'var(--surface-2)', border: '1px solid var(--line)',
-          borderRadius: 10, padding: 12, width: 260,
-          boxShadow: '0 16px 40px rgba(0,0,0,.55)',
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
+          background: 'var(--surface)', border: '1px solid var(--line)',
+          borderRadius: 10, padding: 12, width: 280,
+          boxShadow: '0 16px 40px rgba(0,0,0,.25)',
+          maxHeight: '90vh', overflowY: 'auto',
         }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginBottom: 12 }}>
             {(Object.keys(PRESET_LABELS) as DatePreset[]).map(p => (
@@ -58,18 +59,22 @@ function DateFilter({ preset, setPreset, customFrom, setCustomFrom, customTo, se
                 style={{
                   padding: '7px 10px', fontSize: 12.5, borderRadius: 6, cursor: 'pointer', fontWeight: 500,
                   color: preset === p ? 'var(--text)' : 'var(--text-2)',
-                  background: preset === p ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  background: preset === p ? 'var(--active)' : 'transparent',
                   boxShadow: preset === p ? 'inset 0 0 0 1px var(--line)' : 'none',
                 }}
               >{PRESET_LABELS[p]}</div>
             ))}
           </div>
-          <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.8px', color: 'var(--text-3)', marginBottom: 7, fontWeight: 600 }}>
-            Período personalizado
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
-            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="input" style={{ fontSize: 12.5, padding: '7px 9px' }} />
-            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="input" style={{ fontSize: 12.5, padding: '7px 9px' }} />
+          <div className="t-eyebrow" style={{ marginBottom: 7 }}>Período personalizado</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+            <div>
+              <label className="t-muted" style={{ display: 'block', marginBottom: 3 }}>De</label>
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="input" style={{ fontSize: 12.5, padding: '7px 10px', width: '100%', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label className="t-muted" style={{ display: 'block', marginBottom: 3 }}>Até</label>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="input" style={{ fontSize: 12.5, padding: '7px 10px', width: '100%', boxSizing: 'border-box' }} />
+            </div>
           </div>
           <button className="btn primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12.5 }}
             onClick={() => { if (customFrom && customTo) { setPreset('custom'); setOpen(false) } }}>
@@ -92,6 +97,16 @@ function GraficoLinha({ porDia }: { porDia: { dia: string; enviadas: number; ent
       if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null }
       const ctx = ref.current.getContext('2d')!
 
+      // Ler vars CSS do tema atual
+      const style = getComputedStyle(document.documentElement)
+      const clrText3   = style.getPropertyValue('--text-3').trim()
+      const clrLine    = style.getPropertyValue('--line').trim()
+      const clrSurface = style.getPropertyValue('--surface').trim()
+      const clrText    = style.getPropertyValue('--text').trim()
+      const clrText2   = style.getPropertyValue('--text-2').trim()
+      const isLight    = document.documentElement.getAttribute('data-theme') === 'light'
+      const gridColor  = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'
+
       function grad(r: number, g: number, b: number) {
         const gr = ctx.createLinearGradient(0, 0, 0, 220)
         gr.addColorStop(0, `rgba(${r},${g},${b},0.18)`)
@@ -111,16 +126,16 @@ function GraficoLinha({ porDia }: { porDia: { dia: string; enviadas: number; ent
               backgroundColor: grad(232, 25, 44),
               fill: true, tension: 0.4,
               pointRadius: 4, pointBackgroundColor: '#E8192C',
-              pointBorderColor: '#0E0E15', pointBorderWidth: 2,
+              pointBorderColor: 'transparent', pointBorderWidth: 2,
               pointHoverRadius: 6,
             },
             {
               label: 'Entregues',
               data: porDia.map(p => p.entregues),
-              borderColor: '#8F8FA3', borderWidth: 1.5,
+              borderColor: clrText3, borderWidth: 1.5,
               fill: false, tension: 0.4,
-              pointRadius: 4, pointBackgroundColor: '#8F8FA3',
-              pointBorderColor: '#0E0E15', pointBorderWidth: 2,
+              pointRadius: 4, pointBackgroundColor: clrText3,
+              pointBorderColor: 'transparent', pointBorderWidth: 2,
               pointHoverRadius: 6,
             },
             {
@@ -129,7 +144,7 @@ function GraficoLinha({ porDia }: { porDia: { dia: string; enviadas: number; ent
               borderColor: '#C9A017', borderWidth: 1.5,
               fill: false, tension: 0.4,
               pointRadius: 4, pointBackgroundColor: '#C9A017',
-              pointBorderColor: '#0E0E15', pointBorderWidth: 2,
+              pointBorderColor: 'transparent', pointBorderWidth: 2,
               pointHoverRadius: 6,
             },
           ],
@@ -140,9 +155,9 @@ function GraficoLinha({ porDia }: { porDia: { dia: string; enviadas: number; ent
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#13131C',
-              borderColor: '#232330', borderWidth: 1,
-              titleColor: '#EDEDF2', bodyColor: '#8F8FA3',
+              backgroundColor: clrSurface,
+              borderColor: clrLine, borderWidth: 1,
+              titleColor: clrText, bodyColor: clrText2,
               padding: 10,
               callbacks: {
                 label: (ctx: any) => ` ${ctx.dataset.label}: ${ctx.parsed.y}`,
@@ -152,13 +167,13 @@ function GraficoLinha({ porDia }: { porDia: { dia: string; enviadas: number; ent
           scales: {
             x: {
               grid: { display: false },
-              border: { color: '#232330' },
-              ticks: { color: '#5C5C70', font: { family: 'Inter', size: 11 }, maxTicksLimit: 10 }
+              border: { color: clrLine },
+              ticks: { color: clrText3, font: { family: 'Inter', size: 11 }, maxTicksLimit: 10 }
             },
             y: {
-              grid: { color: 'rgba(255,255,255,0.04)' },
+              grid: { color: gridColor },
               border: { display: false },
-              ticks: { color: '#5C5C70', font: { family: 'Inter', size: 11 }, maxTicksLimit: 5 },
+              ticks: { color: clrText3, font: { family: 'Inter', size: 11 }, maxTicksLimit: 5 },
               beginAtZero: true,
             },
           },
@@ -166,12 +181,21 @@ function GraficoLinha({ porDia }: { porDia: { dia: string; enviadas: number; ent
       })
     }
 
-    if (window.Chart) { buildChart(); return }
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
-    script.onload = buildChart
-    document.head.appendChild(script)
-    return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null } }
+    if (window.Chart) { buildChart() } else {
+      const script = document.createElement('script')
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
+      script.onload = buildChart
+      document.head.appendChild(script)
+    }
+
+    // Re-renderizar quando o tema mudar
+    const obs = new MutationObserver(() => { if (window.Chart) buildChart() })
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+
+    return () => {
+      obs.disconnect()
+      if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null }
+    }
   }, [porDia])
 
   if (porDia.length === 0) {
@@ -191,7 +215,7 @@ function LegendaGrafico() {
     <div style={{ display: 'flex', gap: 18, fontSize: 12, color: 'var(--text-2)' }}>
       {[
         { label: 'Enviadas', color: '#E8192C' },
-        { label: 'Entregues', color: '#8F8FA3' },
+        { label: 'Entregues', color: 'var(--text-3)' },
         { label: 'Lidas', color: '#C9A017' },
       ].map(s => (
         <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -229,8 +253,16 @@ export default function Desempenho() {
 
   return (
     <div>
-      {/* Cabeçalho com filtro de período */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+      {/* Cabeçalho com título + filtro de período */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 'clamp(22px,3vw,30px)', letterSpacing: '-0.01em', lineHeight: 1.1, color: 'var(--text)' }}>
+            Desempenho
+          </h1>
+          <p style={{ color: 'var(--text-3)', marginTop: 4, fontSize: 13 }}>
+            Disparos WhatsApp · {dateLabel}
+          </p>
+        </div>
         <DateFilter
           preset={preset} setPreset={setPreset}
           customFrom={customFrom} setCustomFrom={setCustomFrom}
@@ -243,7 +275,7 @@ export default function Desempenho() {
         <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--text-2)' }}>Carregando dados...</div>
       )}
       {error && (
-        <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>
+        <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--danger)' }}>
           Não foi possível carregar os dados: {error}
         </div>
       )}
