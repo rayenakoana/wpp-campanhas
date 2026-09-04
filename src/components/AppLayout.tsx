@@ -115,9 +115,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Sidebar */}
       <aside
-        className="relative z-10 flex-shrink-0 flex flex-col"
+        className="sidebar relative z-10 flex-shrink-0 flex flex-col"
         style={{
-          width: 224,
           background: 'var(--glass-sidebar)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
@@ -126,21 +125,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         }}
       >
         {/* Brand — símbolo C$ + wordmark + subtitle WPP Campanhas */}
-        <div style={{ padding: '10px 10px 16px', borderBottom: '1px solid var(--glass-border)', marginBottom: 6 }}>
+        <div style={{ padding: '8px 8px 16px', borderBottom: '1px solid var(--glass-border)', marginBottom: 6 }}>
           <div className="brand">
             <img src="/logo-cs-symbol.png" alt="" className="brand-symbol" draggable={false} />
-            <div className="brand-text">
-              <img src="/logo-cs-wordmark.png" alt="Costurando Sucesso" className="brand-wordmark" draggable={false} />
-              <span className="brand-sub">WPP Campanhas</span>
-            </div>
+            <img src="/logo-cs-wordmark.png" alt="Costurando Sucesso" className="brand-wordmark" draggable={false} />
           </div>
+          <div className="brand-sub">WPP Campanhas</div>
         </div>
 
         {/* Nav sections */}
         <nav className="flex-1 flex flex-col" style={{ overflowY: 'auto' }}>
           {navSections.map((section) => (
             <div key={section.label} style={{ marginBottom: 4 }}>
-              <div className="t-eyebrow" style={{ fontSize: 10, padding: '12px 10px 5px' }}>
+              <div className="t-eyebrow nav-section-label" style={{ fontSize: 10, padding: '12px 10px 5px' }}>
                 {section.label}
               </div>
               {section.items.map((item) => (
@@ -164,6 +161,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     letterSpacing: '0.01em',
                   })}
                   className="nav-item-link"
+                  title={item.label}
                 >
                   {({ isActive }) => (
                     <>
@@ -182,7 +180,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                           {item.icon.props.children}
                         </svg>
                       </span>
-                      {item.label}
+                      <span className="nav-label">{item.label}</span>
                     </>
                   )}
                 </NavLink>
@@ -192,7 +190,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* Rodapé da sidebar — marca sutil */}
-        <div style={{
+        <div className="sidebar-footer" style={{
           borderTop: '1px solid var(--glass-border)',
           paddingTop: 14,
           marginTop: 8,
@@ -227,10 +225,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <div className="relative z-10 flex-1 flex flex-col min-w-0">
         {/* Topbar sticky */}
         <header
-          className="flex items-center justify-between sticky top-0 z-20"
+          className="topbar flex items-center justify-between sticky top-0 z-20"
           style={{
             minHeight: 56,
-            padding: '0 36px',
             borderBottom: '1px solid var(--glass-border)',
             background: 'var(--glass-header)',
             backdropFilter: 'blur(20px)',
@@ -296,10 +293,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main style={{ padding: '28px 0 72px', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-          <div style={{ maxWidth: 1440, width: '100%', margin: '0 auto', padding: '0 36px', boxSizing: 'border-box' }}>
-            {children}
-          </div>
+        <main className="page-main" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minWidth: 0 }}>
+          {children}
         </main>
       </div>
     </div>

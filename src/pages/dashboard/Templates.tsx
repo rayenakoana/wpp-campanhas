@@ -98,7 +98,7 @@ function CategoriaBadge({ cat }: { cat: string }) {
   const c = CATEGORIAS.find((x) => x.value === cat) ?? CATEGORIAS[0]
   return (
     <span style={{
-      fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+      fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, marginLeft: -8,
       background: c.color, color: c.text, letterSpacing: '0.06em',
       textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
     }}>
@@ -943,7 +943,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
 }
 
 // ── Aba: Meus Templates ──────────────────────────────────────────────────────
-function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () => void; refreshKey?: number }) {
+function MeusTemplates({ refreshKey = 0 }: { onNovoTemplate?: () => void; refreshKey?: number }) {
   const navigate = useNavigate()
   const { templates, loading, error } = useTemplates(refreshKey)
   const [filtroStatus, setFiltroStatus] = useState('todos')
@@ -1027,8 +1027,6 @@ function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () 
           />
           <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         </div>
-
-        <button className="btn primary" onClick={onNovoTemplate}>+ Novo template</button>
       </div>
 
       {loading && <div className="panel" style={{ padding: 24, fontSize: 13, color: 'var(--text-2)' }}>Carregando templates...</div>}
