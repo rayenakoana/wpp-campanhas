@@ -125,14 +125,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           padding: '18px 10px 20px',
         }}
       >
-        {/* Brand — símbolo C$ (vermelho da marca) + wordmark adaptativo */}
-        <div style={{ padding: '6px 10px 18px', borderBottom: '1px solid var(--glass-border)', marginBottom: 6 }}>
+        {/* Brand — símbolo C$ + wordmark + subtitle WPP Campanhas */}
+        <div style={{ padding: '10px 10px 16px', borderBottom: '1px solid var(--glass-border)', marginBottom: 6 }}>
           <div className="brand">
             <img src="/logo-cs-symbol.png" alt="" className="brand-symbol" draggable={false} />
-            <img src="/logo-cs-wordmark.png" alt="Costurando Sucesso" className="brand-wordmark" draggable={false} />
-          </div>
-          <div className="t-eyebrow" style={{ marginTop: 10, letterSpacing: '.14em', fontSize: 9.5, textAlign: 'center' }}>
-            WPP Campanhas
+            <div className="brand-text">
+              <img src="/logo-cs-wordmark.png" alt="Costurando Sucesso" className="brand-wordmark" draggable={false} />
+              <span className="brand-sub">WPP Campanhas</span>
+            </div>
           </div>
         </div>
 

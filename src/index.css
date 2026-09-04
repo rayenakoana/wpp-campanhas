@@ -195,6 +195,7 @@ body::before {
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
+  color: var(--text);
 }
 
 .kpi-sub {
@@ -227,6 +228,7 @@ body::before {
 .panel-title {
   font-size: 13.5px;
   font-weight: 600;
+  color: var(--text);
 }
 
 .panel-title span {
@@ -305,6 +307,7 @@ body::before {
 .data-table tbody td {
   padding: 14px 20px;
   font-size: 13.5px;
+  color: var(--text);
   border-bottom: 1px solid var(--line-soft);
   vertical-align: middle;
 }
@@ -314,9 +317,9 @@ body::before {
 .data-table tbody tr.rowlink { cursor: pointer; }
 .data-table tbody tr.rowlink:hover { background: var(--hover); }
 
-.row-title { font-weight: 500; }
+.row-title { font-weight: 500; color: var(--text); }
 .row-sub   { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
-.cell-num  { font-weight: 600; }
+.cell-num  { font-weight: 600; color: var(--text); }
 .cell-gold { color: var(--gold); font-weight: 600; }
 .arrow-cell{ color: var(--text-3); font-size: 14px; width: 36px; }
 
@@ -563,7 +566,7 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 .chart-wrap { height: 190px; }
 
 /* ── num ── */
-.num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--text); }
 
 :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 ::selection    { background: var(--red); color: white; }
@@ -583,8 +586,17 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
   border-top-color: rgba(0,0,0,0.10);
 }
 
+[data-theme="light"] .data-table {
+  background: rgba(255,255,255,0.85);
+}
+
 [data-theme="light"] .data-table thead th {
-  background: rgba(0,0,0,0.02);
+  background: rgba(0,0,0,0.025);
+  color: var(--text-3);
+}
+
+[data-theme="light"] .data-table tbody td {
+  color: var(--text);
 }
 
 [data-theme="light"] .data-table tr:hover td {
@@ -630,9 +642,11 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 /* ── Marca na sidebar ──
    símbolo C$ mantém o vermelho em ambos os temas;
    wordmark é branco no escuro e preto no claro */
-.brand { display: flex; align-items: center; gap: 9px; }
-.brand-symbol { height: 26px; width: auto; display: block; }
-.brand-wordmark { height: 22px; width: auto; display: block; opacity: .95; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-symbol { height: 36px; width: auto; display: block; flex-shrink: 0; }
+.brand-text { display: flex; flex-direction: column; gap: 2px; line-height: 1; }
+.brand-wordmark { height: 18px; width: auto; display: block; opacity: .95; }
+.brand-sub { font-size: 9.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); }
 [data-theme="light"] .brand-wordmark { filter: brightness(0); opacity: .9; }
 
 /* ── Responsividade geral ── */
