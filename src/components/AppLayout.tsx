@@ -121,35 +121,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           background: 'var(--glass-sidebar)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderRight: '1px solid rgba(255,255,255,0.055)',
+          borderRight: '1px solid var(--glass-border)',
           padding: '18px 10px 20px',
         }}
       >
-        {/* Brand — logo CS + label do app */}
-        <div style={{ padding: '4px 10px 22px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 8 }}>
-          {/* Logo CS — ícone da marca */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <img
-              src="/logo-cs.png"
-              alt="Costurando Sucesso"
-              style={{
-                height: 28,
-                width: 'auto',
-                objectFit: 'contain',
-                filter: 'brightness(0) invert(1)',
-                opacity: 0.9,
-              }}
-            />
+        {/* Brand — símbolo C$ (vermelho da marca) + wordmark adaptativo */}
+        <div style={{ padding: '6px 10px 18px', borderBottom: '1px solid var(--glass-border)', marginBottom: 6 }}>
+          <div className="brand">
+            <img src="/logo-cs-symbol.png" alt="" className="brand-symbol" draggable={false} />
+            <img src="/logo-cs-wordmark.png" alt="Costurando Sucesso" className="brand-wordmark" draggable={false} />
           </div>
-          {/* Label do app — separado, mais discreto */}
-          <div style={{
-            fontSize: 10.5,
-            fontWeight: 600,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--text-3)',
-            paddingLeft: 2,
-          }}>
+          <div className="t-eyebrow" style={{ marginTop: 12, paddingLeft: 1, letterSpacing: '.12em', fontSize: 10 }}>
             WPP Campanhas
           </div>
         </div>
@@ -158,14 +140,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <nav className="flex-1 flex flex-col" style={{ overflowY: 'auto' }}>
           {navSections.map((section) => (
             <div key={section.label} style={{ marginBottom: 4 }}>
-              <div style={{
-                fontSize: 9.5,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: 'var(--text-3)',
-                padding: '12px 10px 5px',
-                fontWeight: 700,
-              }}>
+              <div className="t-eyebrow" style={{ fontSize: 10, padding: '12px 10px 5px' }}>
                 {section.label}
               </div>
               {section.items.map((item) => (
@@ -184,7 +159,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     marginBottom: 1,
                     textDecoration: 'none',
                     transition: 'background 0.15s, color 0.15s',
-                    background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
+                    background: isActive ? 'var(--active)' : 'transparent',
                     color: isActive ? 'var(--text)' : 'var(--text-2)',
                     letterSpacing: '0.01em',
                   })}
@@ -218,19 +193,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
         {/* Rodapé da sidebar — marca sutil */}
         <div style={{
-          borderTop: '1px solid rgba(255,255,255,0.05)',
+          borderTop: '1px solid var(--glass-border)',
           paddingTop: 14,
           marginTop: 8,
           paddingLeft: 10,
           paddingRight: 10,
         }}>
-          <div style={{
-            fontSize: 10,
-            color: 'var(--text-3)',
-            letterSpacing: '0.06em',
-            opacity: 0.6,
-            marginBottom: 10,
-          }}>
+          <div className="t-muted" style={{ fontSize: 11, opacity: .7, marginBottom: 10 }}>
             costurandosucesso.com
           </div>
           <button
@@ -261,7 +230,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           className="flex items-center justify-between sticky top-0 z-20"
           style={{
             padding: '16px 40px',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid var(--glass-border)',
             background: 'var(--glass-header)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabaseWpp } from '../../lib/supabase'
+import Icon, { IconBadge } from '../../components/Icon'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -87,7 +88,7 @@ const RANKING_LABEL: Record<string, string> = {
 const RANKING_COLOR: Record<string, string> = {
   above_average: 'var(--green)',
   average: 'var(--gold)',
-  below_average: '#f87171',
+  below_average: 'var(--danger)',
 }
 
 function getDateRange(preset: DatePreset): { from: string; to: string } {
@@ -259,7 +260,7 @@ function LineChart({ series, metric, height=180 }: { series: CampaignSeries[]; m
         </div>
       )}
       <div style={{display:'flex',gap:16,marginTop:8,flexWrap:'wrap'}}>
-        {seriesData.map(s=><div key={s.campaign_id} style={{display:'flex',alignItems:'center',gap:6,fontSize:11.5,color:'var(--text-2)'}}><div style={{width:20,height:2,background:s.color,borderRadius:1}}/>{s.campaign_name.replace(/\[|\]/g,' ').replace(/\s+/g,' ').trim()}</div>)}
+        {seriesData.map(s=><div key={s.campaign_id} style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--text-2)'}}><div style={{width:20,height:2,background:s.color,borderRadius:1}}/>{s.campaign_name.replace(/\[|\]/g,' ').replace(/\s+/g,' ').trim()}</div>)}
       </div>
     </div>
   )
@@ -269,7 +270,7 @@ function LineChart({ series, metric, height=180 }: { series: CampaignSeries[]; m
 
 function RankingBadge({ value }: { value: string | null }) {
   if (!value) return <span style={{color:'var(--text-3)',fontSize:12}}>—</span>
-  return <span style={{fontSize:11.5,fontWeight:500,color:RANKING_COLOR[value]??'var(--text-2)'}}>{RANKING_LABEL[value]??value}</span>
+  return <span style={{fontSize:12,fontWeight:500,color:RANKING_COLOR[value]??'var(--text-2)'}}>{RANKING_LABEL[value]??value}</span>
 }
 
 function RankingBar({ value }: { value: string | null }) {
@@ -303,10 +304,10 @@ function DateFilter({ preset,setPreset,customFrom,setCustomFrom,customTo,setCust
         <div style={{position:'absolute',top:'calc(100% + 6px)',right:0,zIndex:200,background:'var(--surface)',border:'1px solid var(--line)',borderRadius:10,padding:12,width:300,boxShadow:'0 16px 40px rgba(0,0,0,.25)'}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,marginBottom:12}}>
             {(Object.keys(PRESET_LABELS) as DatePreset[]).map(p=>(
-              <div key={p} onClick={()=>{setPreset(p);setOpen(false)}} style={{padding:'7px 10px',fontSize:12.5,borderRadius:6,cursor:'pointer',fontWeight:500,color:preset===p?'var(--text)':'var(--text-2)',background:preset===p?'rgba(255,255,255,0.06)':'transparent',boxShadow:preset===p?'inset 0 0 0 1px var(--line)':'none'}}>{PRESET_LABELS[p]}</div>
+              <div key={p} onClick={()=>{setPreset(p);setOpen(false)}} style={{padding:'7px 10px',fontSize:12.5,borderRadius:6,cursor:'pointer',fontWeight:500,color:preset===p?'var(--text)':'var(--text-2)',background:preset===p?'var(--active)':'transparent',boxShadow:preset===p?'inset 0 0 0 1px var(--line)':'none'}}>{PRESET_LABELS[p]}</div>
             ))}
           </div>
-          <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.8px',color:'var(--text-3)',marginBottom:7,fontWeight:600}}>Período personalizado</div>
+          <div className="t-eyebrow" style={{marginBottom:7}}>Período personalizado</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
             <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)} className="input" style={{fontSize:12.5,padding:'7px 9px',width:'100%',minWidth:0,boxSizing:'border-box'}}/>
             <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)} className="input" style={{fontSize:12.5,padding:'7px 9px',width:'100%',minWidth:0,boxSizing:'border-box'}}/>
@@ -374,7 +375,7 @@ export default function Radar() {
         <div>
           <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
             <h1 className="font-display font-semibold text-2xl">Radar de Conversões</h1>
-            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:11.5,color:campaignSeries.length>0?'var(--green)':'var(--text-3)'}}>
+            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:campaignSeries.length>0?'var(--green)':'var(--text-3)'}}>
               <span style={{width:6,height:6,borderRadius:'50%',background:campaignSeries.length>0?'var(--green)':'var(--text-3)',display:'inline-block'}}/>
               {loading?'Sincronizando...':syncedAt?`Sincronizado ${timeSince(syncedAt)}`:'Aguardando dados'}
             </span>
@@ -390,7 +391,7 @@ export default function Radar() {
         </div>
       )}
 
-      {error&&<div className="panel" style={{padding:'12px 16px',marginBottom:20,color:'#f87171',fontSize:13}}>⚠ Erro: {error}</div>}
+      {error&&<div className="panel" style={{padding:'12px 16px',marginBottom:20,display:'flex',alignItems:'center',gap:8,color:'var(--danger)',fontSize:13}}><Icon name="alert"/> Erro: {error}</div>}
 
       {loading?(
         <div className="panel" style={{padding:40,fontSize:13,color:'var(--text-2)',textAlign:'center'}}>Carregando...</div>
@@ -433,12 +434,12 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
 
   return (
     <>
-      <div style={{fontSize:11,textTransform:'uppercase',letterSpacing:'1px',color:'var(--text-3)',fontWeight:600,marginBottom:8}}>Meta Ads</div>
+      <div className="t-eyebrow" style={{marginBottom:8}}>Meta Ads</div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:20}}>
         {[
           {label:'Leads gerados',value:fmtNum(totalLeads),sub:`${campaignSeries.length} campanhas`},
           {label:'Alcance único',value:fmtNum(totalReach),sub:`${fmtNum(campaignSeries.reduce((s,c)=>s+c.total_impressions,0))} impressões`},
-          {label:'Frequência média',value:avgFreq>0?avgFreq.toFixed(2)+'×':'—',sub:freqAlert?'⚠ acima de 3×, saturando':'dentro do ideal',warn:freqAlert},
+          {label:'Frequência média',value:avgFreq>0?avgFreq.toFixed(2)+'×':'—',sub:freqAlert?'Acima de 3×, saturando':'Dentro do ideal',warn:freqAlert},
           {label:'Gasto total',value:fmtBRL(totalSpend),sub:`CPL ${fmtBRL(avgCPL)}`},
           {label:'Conversas WhatsApp',value:totalConversations>0?fmtNum(totalConversations):'—',sub:convRate>0?`${convRate.toFixed(1).replace('.',',')}% dos leads`:'aguardando dados',green:convRate>0},
           {label:'Receita atribuída',value:fmtBRL(totalRev),sub:`ROAS ${fmtROAS(avgROAS)}`,gold:true},
@@ -457,7 +458,7 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
             <div className="panel-title">Evolução diária <span>por campanha</span></div>
             <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
               {METRICS.map(m=>(
-                <button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:11.5,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--red)':'transparent',color:metric===m.key?'#fff':'var(--text-3)'}}>
+                <button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:12,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--red)':'transparent',color:metric===m.key?'#fff':'var(--text-3)'}}>
                   {m.label}
                 </button>
               ))}
@@ -498,7 +499,7 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
 
       {wppCampanhas.length>0&&(
         <>
-          <div style={{fontSize:11,textTransform:'uppercase',letterSpacing:'1px',color:'var(--text-3)',fontWeight:600,marginBottom:8}}>Campanhas WhatsApp</div>
+          <div className="t-eyebrow" style={{marginBottom:8}}>Campanhas WhatsApp</div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:14}}>
             {[
               {label:'Disparos totais',value:fmtNum(totalWppEnvios),sub:`${wppCampanhas.length} campanhas`},
@@ -567,9 +568,9 @@ function CampanhaView({campaignSeries,wppCampanhas,subTab,setSubTab,onDetail}:{
                 <tr key={c.id}>
                   <td><div className="row-title">{c.name}</div><div className="row-sub">{c.status==='completed'?'Concluída':c.status==='running'?'Em andamento':c.status}{c.completed_at?` · ${new Date(c.completed_at).toLocaleDateString('pt-BR')}`:''}</div></td>
                   <td className="r cell-num num">{fmtNum(c.total_envios)}</td>
-                  <td className="r num">{fmtNum(c.entregues)} <span style={{color:'var(--text-3)',fontSize:11.5}}>{c.total_envios>0?`${((c.entregues/c.total_envios)*100).toFixed(0)}%`:''}</span></td>
-                  <td className="r num">{fmtNum(c.lidos)} <span style={{color:'var(--text-3)',fontSize:11.5}}>{c.entregues>0?`${((c.lidos/c.entregues)*100).toFixed(0)}%`:''}</span></td>
-                  <td className="r num" style={{color:c.falhas>0?'#f87171':'var(--text-3)'}}>{c.falhas>0?fmtNum(c.falhas):'—'}</td>
+                  <td className="r num">{fmtNum(c.entregues)} <span style={{color:'var(--text-3)',fontSize:12}}>{c.total_envios>0?`${((c.entregues/c.total_envios)*100).toFixed(0)}%`:''}</span></td>
+                  <td className="r num">{fmtNum(c.lidos)} <span style={{color:'var(--text-3)',fontSize:12}}>{c.entregues>0?`${((c.lidos/c.entregues)*100).toFixed(0)}%`:''}</span></td>
+                  <td className="r num" style={{color:c.falhas>0?'var(--danger)':'var(--text-3)'}}>{c.falhas>0?fmtNum(c.falhas):'—'}</td>
                   <td className="r num">{c.custo_total>0?fmtBRL(c.custo_total):'—'}</td>
                 </tr>
               ))}
@@ -659,8 +660,8 @@ function SaudeView({campaignSeries}:{campaignSeries:CampaignSeries[]}) {
               {label:'Taxa de engajamento',value:s.engagement_rate_ranking,desc:'Curtidas, comentários e cliques vs concorrentes'},
               {label:'Taxa de conversão',value:s.conversion_rate_ranking,desc:'Conversões esperadas vs anúncios com mesmo objetivo'},
             ].map(item=>(
-              <div key={item.label} style={{padding:'12px 14px',background:'var(--surface-2,rgba(255,255,255,0.03))',borderRadius:8,border:'1px solid var(--line)'}}>
-                <div style={{fontSize:11.5,color:'var(--text-3)',marginBottom:8,fontWeight:500}}>{item.label}</div>
+              <div key={item.label} style={{padding:'12px 14px',background:'var(--surface-2)',borderRadius:8,border:'1px solid var(--line)'}}>
+                <div style={{fontSize:12,color:'var(--text-3)',marginBottom:8,fontWeight:500}}>{item.label}</div>
                 <div style={{marginBottom:8}}><RankingBadge value={item.value}/></div>
                 <RankingBar value={item.value}/>
                 <div style={{fontSize:11,color:'var(--text-3)',marginTop:6,lineHeight:1.4}}>{item.desc}</div>
@@ -750,21 +751,15 @@ function InsightsView({campaignSeries,totalLeads,totalConversations,avgFreq}:{
     </div>
   )
 
-  const iconMap={warn:'⚠',good:'✓',info:'i'}
-  const bgMap={warn:'rgba(234,179,8,0.12)',good:'rgba(34,197,94,0.12)',info:'rgba(59,130,246,0.12)'}
-  const colorMap={warn:'#ca8a04',good:'#16a34a',info:'#2563eb'}
-
   return (
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       {insights.map((ins,i)=>(
         <div key={i} className="panel" style={{padding:'14px 16px'}}>
           <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
-            <div style={{width:28,height:28,borderRadius:6,background:bgMap[ins.type],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:13,fontWeight:700,color:colorMap[ins.type]}}>
-              {iconMap[ins.type]}
-            </div>
+            <IconBadge tone={ins.type}/>
             <div>
-              <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:5}}>{ins.title}</div>
-              <div style={{fontSize:12.5,color:'var(--text-2)',lineHeight:1.6}}>{ins.body}</div>
+              <div className="t-title" style={{marginBottom:4}}>{ins.title}</div>
+              <div className="t-sub">{ins.body}</div>
             </div>
           </div>
         </div>
@@ -783,7 +778,7 @@ function DetailView({series,onBack}:{series:CampaignSeries;onBack:()=>void}) {
 
   return (
     <div style={{maxWidth:'100%'}}>
-      <div onClick={onBack} style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,color:'var(--text-2)',cursor:'pointer',marginBottom:20,fontWeight:500}} onMouseEnter={e=>(e.currentTarget.style.color='var(--text)')} onMouseLeave={e=>(e.currentTarget.style.color='var(--text-2)')}>← Voltar</div>
+      <div onClick={onBack} style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,color:'var(--text-2)',cursor:'pointer',marginBottom:20,fontWeight:500}} onMouseEnter={e=>(e.currentTarget.style.color='var(--text)')} onMouseLeave={e=>(e.currentTarget.style.color='var(--text-2)')}><Icon name="arrow-left"/> Voltar</div>
       <div style={{marginBottom:24}}>
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
           <span style={{width:10,height:10,borderRadius:'50%',background:series.color,flexShrink:0}}/>
@@ -815,7 +810,7 @@ function DetailView({series,onBack}:{series:CampaignSeries;onBack:()=>void}) {
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:12}}>
           {[{label:'Qualidade',value:series.quality_ranking},{label:'Engajamento',value:series.engagement_rate_ranking},{label:'Conversão',value:series.conversion_rate_ranking}].map(r=>(
-            <div key={r.label} style={{padding:'10px 12px',background:'var(--surface-2,rgba(255,255,255,0.03))',borderRadius:8,border:'1px solid var(--line)'}}>
+            <div key={r.label} style={{padding:'10px 12px',background:'var(--surface-2)',borderRadius:8,border:'1px solid var(--line)'}}>
               <div style={{fontSize:11,color:'var(--text-3)',marginBottom:6,fontWeight:500}}>{r.label}</div>
               <RankingBadge value={r.value}/>
               <div style={{marginTop:6}}><RankingBar value={r.value}/></div>
@@ -829,7 +824,7 @@ function DetailView({series,onBack}:{series:CampaignSeries;onBack:()=>void}) {
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,flexWrap:'wrap',gap:8}}>
             <div className="panel-title">Evolução diária</div>
             <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
-              {METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:11.5,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--red)':'transparent',color:metric===m.key?'#fff':'var(--text-3)'}}>{m.label}</button>)}
+              {METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:12,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--red)':'transparent',color:metric===m.key?'#fff':'var(--text-3)'}}>{m.label}</button>)}
             </div>
           </div>
           <LineChart series={[series]} metric={metric} height={180}/>

@@ -1,3 +1,4 @@
+import Icon from '../../components/Icon'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { META_WABA_ID as WABA_ID, META_WPP_TOKEN as META_TOKEN } from '../../lib/metaConfig'
@@ -356,8 +357,8 @@ function DrawerDetalhe({ template, onClose, onUsarNaCampanha, modoLibrary, onAdi
         <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 10, flexDirection: 'column' as const }}>
           {modoLibrary ? (
             adicionadoOk ? (
-              <div style={{ padding: '11px 16px', background: 'rgba(61,190,123,0.1)', border: '1px solid rgba(61,190,123,0.3)', borderRadius: 8, fontSize: 13, color: '#8fe0b6', textAlign: 'center' as const }}>
-                ✓ Template adicionado à sua WABA! Aprovado automaticamente.
+              <div style={{ padding: '11px 16px', background: 'var(--good-bg)', border: '1px solid var(--green)', borderRadius: 8, fontSize: 13, color: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <Icon name="check"/> Template adicionado à sua WABA. Aprovado automaticamente.
               </div>
             ) : (
               <button
@@ -705,12 +706,12 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
                 <div className="field" style={{ marginBottom: 0 }}>
                   <label>Idioma</label>
                   <select className="input" value={idioma} onChange={e => setIdioma(e.target.value)}>
-                    <option value="pt_BR">Português (BR) ✓</option>
+                    <option value="pt_BR">Português (BR) — recomendado</option>
                     <option value="pt_PT">Português (PT)</option>
                     <option value="en_US">English (US)</option>
                     <option value="es">Español</option>
                   </select>
-                  <div className="hint">⚠️ Use sempre pt_BR, nunca pt_PT</div>
+                  <div className="hint">Use sempre pt_BR, nunca pt_PT.</div>
                 </div>
               </div>
             </div>
@@ -732,7 +733,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
               </div>
               {categoria === 'AUTHENTICATION' && (
                 <div style={{ marginTop: 10, padding: '9px 13px', borderRadius: 8, background: 'rgba(155,123,216,0.08)', border: '1px solid rgba(155,123,216,0.2)', fontSize: 11, color: '#c4aff0', lineHeight: 1.5 }}>
-                  ⚠️ Templates de Autenticação têm corpo de texto fixo definido pela Meta. Você pode ativar recomendação de segurança e definir tempo de expiração. Botões disponíveis: Copy Code, OTP Autofill.
+                  Templates de Autenticação têm corpo de texto fixo definido pela Meta. Você pode ativar recomendação de segurança e definir tempo de expiração. Botões disponíveis: Copy Code, OTP Autofill.
                 </div>
               )}
             </div>
@@ -777,7 +778,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
                     <div style={{ border: '1.5px dashed var(--line)', borderRadius: 9, padding: 20, textAlign: 'center' as const, cursor: 'pointer' }}
                       onClick={() => document.getElementById('media-file-input')?.click()}>
                       <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
-                        {mediaFile ? `✓ ${mediaFile.name}` : `Clique para enviar ${headerTipo === 'IMAGE' ? 'imagem (JPG/PNG · 5MB)' : headerTipo === 'VIDEO' ? 'vídeo (MP4 · 16MB)' : headerTipo === 'GIF' ? 'GIF como MP4 · 3.5MB' : 'documento (PDF · 100MB)'}`}
+                        {mediaFile ? mediaFile.name : `Clique para enviar ${headerTipo === 'IMAGE' ? 'imagem (JPG/PNG · 5MB)' : headerTipo === 'VIDEO' ? 'vídeo (MP4 · 16MB)' : headerTipo === 'GIF' ? 'GIF como MP4 · 3.5MB' : 'documento (PDF · 100MB)'}`}
                       </div>
                     </div>
                     <input id="media-file-input" type="file" style={{ display: 'none' }}
@@ -875,7 +876,7 @@ function ModalNovoTemplate({ onClose, onCriado }: ModalNovoTemplateProps) {
                 </div>
               )}
               <div className="hint" style={{ marginTop: 7 }}>
-                {btnTotal >= 4 ? '⚠️ Mais de 3 botões: aparecerão 2 + "Ver opções". Não suportado no WhatsApp Desktop.' : 'Dica: inclua "Parar de receber mensagens" (Resp. rápida) — recomendado pela Meta.'}
+                {btnTotal >= 4 ? 'Mais de 3 botões: aparecerão 2 + "Ver opções". Não suportado no WhatsApp Desktop.' : 'Dica: inclua "Parar de receber mensagens" (Resp. rápida) — recomendado pela Meta.'}
               </div>
             </div>
 

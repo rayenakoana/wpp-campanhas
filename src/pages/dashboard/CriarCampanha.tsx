@@ -1,3 +1,4 @@
+import Icon from '../../components/Icon'
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
@@ -673,10 +674,10 @@ export default function CriarCampanha() {
                 <div style={{
                   width: 18, height: 18, borderRadius: '50%', display: 'flex',
                   alignItems: 'center', justifyContent: 'center', fontSize: 11, flexShrink: 0,
-                  background: item.pendente ? 'rgba(143,143,163,0.14)' : item.ok ? 'rgba(61,190,123,0.18)' : 'rgba(232,25,44,0.14)',
-                  color: item.pendente ? 'var(--text-3)' : item.ok ? 'var(--green)' : 'var(--red)',
+                  background: item.pendente ? 'var(--hover)' : item.ok ? 'var(--good-bg)' : 'var(--danger-bg)',
+                  color: item.pendente ? 'var(--text-3)' : item.ok ? 'var(--green)' : 'var(--danger)',
                 }}>
-                  {item.pendente ? '·' : item.ok ? '✓' : '✕'}
+                  {item.pendente ? <Icon name="dot" size={10}/> : item.ok ? <Icon name="check" size={11}/> : <Icon name="x" size={11}/>}
                 </div>
                 <span style={{ color: item.pendente ? 'var(--text-3)' : 'var(--text)' }}>{item.label}</span>
               </div>

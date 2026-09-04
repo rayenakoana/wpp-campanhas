@@ -15,6 +15,17 @@
   --text-3:       #5C5C70;
   --green:        #3DBE7B;
   --amber:        #D97E2B;
+  --blue:         #5B8DEF;
+  --danger:       #F26B6B;
+
+  /* Estados / fundos suaves */
+  --hover:        rgba(255,255,255,0.05);
+  --active:       rgba(255,255,255,0.08);
+  --line-strong:  #33334A;
+  --warn-bg:      rgba(217,126,43,0.14);
+  --good-bg:      rgba(61,190,123,0.14);
+  --info-bg:      rgba(91,141,239,0.14);
+  --danger-bg:    rgba(242,107,107,0.14);
 
   --glass-sidebar:  rgba(11,11,18,0.82);
   --glass-header:   rgba(11,11,18,0.70);
@@ -47,6 +58,16 @@
   --text-3:       #9A9AAA;
   --green:        #1F9E5A;
   --amber:        #B86820;
+  --blue:         #2F63C9;
+  --danger:       #C43C3C;
+
+  --hover:        rgba(0,0,0,0.04);
+  --active:       rgba(0,0,0,0.07);
+  --line-strong:  #CFCDC6;
+  --warn-bg:      rgba(184,104,32,0.12);
+  --good-bg:      rgba(31,158,90,0.12);
+  --info-bg:      rgba(47,99,201,0.12);
+  --danger-bg:    rgba(196,60,60,0.12);
 
   --glass-sidebar:  rgba(255,255,255,0.72);
   --glass-header:   rgba(242,240,236,0.80);
@@ -77,6 +98,30 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── Escala tipográfica (usar sempre estas classes/tamanhos) ──
+   display  : Barlow Condensed 700 — títulos de página e números grandes
+   title    : 13.5px 600 — títulos de painel/seção
+   body     : 13px 400/500 — texto padrão, tabelas, nav
+   sub      : 12.5px — texto secundário (text-2)
+   muted    : 12px — legendas, hints (text-3)
+   eyebrow  : 11px 600 uppercase .08em — rótulos de seção (text-3)
+*/
+.t-display { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: -0.01em; line-height: 1.05; }
+.t-title   { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.t-body    { font-size: 13px; color: var(--text); }
+.t-sub     { font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
+.t-muted   { font-size: 12px; color: var(--text-3); }
+.t-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
+.t-mono    { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+
+/* ── Ícones inline (SVG stroke) ── */
+.ico { width: 14px; height: 14px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ico-badge { width: 28px; height: 28px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ico-badge.warn   { background: var(--warn-bg);   color: var(--amber); }
+.ico-badge.good   { background: var(--good-bg);   color: var(--green); }
+.ico-badge.info   { background: var(--info-bg);   color: var(--blue);  }
+.ico-badge.danger { background: var(--danger-bg); color: var(--danger);}
+
 /* ── Ambient glow animado (pseudo-elemento no body) ── */
 body::before {
   content: '';
@@ -105,9 +150,9 @@ body::before {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-top-color: rgba(255,255,255,0.11);
+  background: var(--active);
+  border: 1px solid var(--glass-border);
+  border-top-color: var(--glass-border-t);
   border-radius: 14px;
   overflow: hidden;
   margin-bottom: 20px;
@@ -166,10 +211,10 @@ body::before {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--glass-border);
-  border-top-color: rgba(255,255,255,0.11);
+  border-top-color: var(--glass-border-t);
   border-radius: 14px;
   padding: 20px 22px;
-  box-shadow: 0 10px 32px rgba(0,0,0,0.28);
+  box-shadow: var(--shadow-panel);
 }
 
 .panel-head {
@@ -235,18 +280,18 @@ body::before {
   background: linear-gradient(165deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-top-color: rgba(255,255,255,0.11);
+  border: 1px solid var(--glass-border);
+  border-top-color: var(--glass-border-t);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 10px 32px rgba(0,0,0,0.28);
+  box-shadow: var(--shadow-panel);
 }
 
 .data-table thead th {
   text-align: left;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: .6px;
+  letter-spacing: .08em;
   color: var(--text-3);
   padding: 11px 20px;
   border-bottom: 1px solid var(--line-soft);
@@ -266,7 +311,7 @@ body::before {
 .data-table tbody tr:last-child td { border-bottom: none; }
 
 .data-table tbody tr.rowlink { cursor: pointer; }
-.data-table tbody tr.rowlink:hover { background: rgba(255,255,255,0.035); }
+.data-table tbody tr.rowlink:hover { background: var(--hover); }
 
 .row-title { font-weight: 500; }
 .row-sub   { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
@@ -277,10 +322,10 @@ body::before {
 /* ── Tabs ── */
 .tabs {
   display: inline-flex;
-  background: rgba(255,255,255,0.035);
+  background: var(--hover);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid var(--glass-border);
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
@@ -301,9 +346,9 @@ body::before {
 }
 
 .tab.active {
-  background: rgba(255,255,255,0.08);
+  background: var(--active);
   color: var(--text);
-  box-shadow: 0 1px 3px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,0.09);
+  box-shadow: 0 1px 3px rgba(0,0,0,.35), inset 0 1px 0 var(--glass-border-t);
 }
 
 /* ── Buttons ── */
@@ -322,7 +367,7 @@ body::before {
   color: var(--text);
   transition: background .15s, border-color .15s;
 }
-.btn:hover { background: var(--surface); border-color: #333342; }
+.btn:hover { background: var(--surface); border-color: var(--line-strong); }
 .btn.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
 .btn.primary:hover { background: #c9142a; }
 
@@ -348,7 +393,7 @@ select.input {
   font-family: 'Inter';
   outline: none;
 }
-.input:focus { border-color: #3a3a4c; }
+.input:focus { border-color: var(--line-strong); }
 textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 .hint { font-size: 11.5px; color: var(--text-3); margin-top: 6px; }
 
@@ -363,7 +408,7 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
   cursor: pointer;
   font-family: monospace;
 }
-.var-chip:hover { color: var(--text); border-color: #3a3a4c; }
+.var-chip:hover { color: var(--text); border-color: var(--line-strong); }
 
 .seg-option {
   display: flex;
@@ -422,8 +467,8 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
   background: linear-gradient(165deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.018) 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-top-color: rgba(255,255,255,0.11);
+  border: 1px solid var(--glass-border);
+  border-top-color: var(--glass-border-t);
   border-radius: 14px;
   padding: 20px 22px;
   display: flex;
@@ -520,7 +565,7 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
 :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
-::selection    { background: #8a1520; color: white; }
+::selection    { background: var(--red); color: white; }
 
 /* ── Tema claro: ajustes específicos ── */
 [data-theme="light"] .kpi-row {
@@ -580,8 +625,10 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
   opacity: 0.7;
 }
 
-/* Logo CS invertida no tema claro */
-[data-theme="light"] img[alt="Costurando Sucesso"] {
-  filter: brightness(0) !important;
-  opacity: 0.85 !important;
-}
+/* ── Marca na sidebar ──
+   símbolo C$ mantém o vermelho em ambos os temas;
+   wordmark é branco no escuro e preto no claro */
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand-symbol { height: 26px; width: auto; display: block; }
+.brand-wordmark { height: 22px; width: auto; display: block; opacity: .95; }
+[data-theme="light"] .brand-wordmark { filter: brightness(0); opacity: .9; }
