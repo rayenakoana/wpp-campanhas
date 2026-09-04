@@ -278,7 +278,8 @@ function DrawerCampanha({ campanha, onClose }: { campanha: CampanhaCompleta; onC
           )}
 
           {!loading && enviosFiltrados.length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{overflowX:'auto',borderRadius:14}}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
                   {['Lead ID', 'Status', 'Enviado em', 'Entregue em', 'Lido em', 'Motivo falha'].map((h) => (
@@ -323,6 +324,7 @@ function DrawerCampanha({ campanha, onClose }: { campanha: CampanhaCompleta; onC
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
@@ -399,7 +401,8 @@ export default function Campanhas() {
       )}
 
       {!loading && !error && (
-        <table className="data-table">
+        <div style={{overflowX:'auto',borderRadius:14}}>
+          <table className="data-table">
           <thead>
             <tr>
               <th>Campanha</th>
@@ -457,6 +460,7 @@ export default function Campanhas() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </>
   )

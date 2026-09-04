@@ -1035,7 +1035,8 @@ function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () 
       {error && <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>Não foi possível carregar: {error}</div>}
 
       {!loading && !error && (
-        <table className="data-table">
+        <div style={{overflowX:'auto',borderRadius:14}}>
+          <table className="data-table">
           <thead>
             <tr>
               <th>Template</th>
@@ -1075,6 +1076,7 @@ function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () 
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {/* Drawer de detalhe */}

@@ -95,7 +95,8 @@ export default function Integracoes() {
           <div className="panel-head">
             <div className="panel-title">Templates de mensagem (Meta)</div>
           </div>
-          <table className="data-table" style={{ border: 'none', borderRadius: 0, boxShadow: 'none', background: 'transparent' }}>
+          <div style={{overflowX:'auto',borderRadius:14}}>
+            <table className="data-table" style={{ border: 'none', borderRadius: 0, boxShadow: 'none', background: 'transparent' }}>
             <thead>
               <tr>
                 <th>Template</th>
@@ -119,6 +120,7 @@ export default function Integracoes() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

@@ -276,6 +276,7 @@ body::before {
 /* ── Data table ── */
 .data-table {
   width: 100%;
+  min-width: 480px;
   border-collapse: collapse;
   background: linear-gradient(165deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%);
   backdrop-filter: blur(14px);
@@ -321,7 +322,7 @@ body::before {
 
 /* ── Tabs ── */
 .tabs {
-  display: inline-flex;
+  display: flex;
   background: var(--hover);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -596,7 +597,8 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 
 [data-theme="light"] .tab.active {
   background: var(--surface-2);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), inset 0 0 0 1px var(--glass-border);
 }
 
 [data-theme="light"] .btn {
@@ -632,3 +634,19 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 .brand-symbol { height: 26px; width: auto; display: block; }
 .brand-wordmark { height: 22px; width: auto; display: block; opacity: .95; }
 [data-theme="light"] .brand-wordmark { filter: brightness(0); opacity: .9; }
+
+/* ── Responsividade geral ── */
+@media (max-width: 900px) {
+  .data-table thead th,
+  .data-table tbody td {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* ── Centralização global do conteúdo (fallback) ── */
+.page-wrap {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}

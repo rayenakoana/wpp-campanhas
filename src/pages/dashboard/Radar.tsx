@@ -301,7 +301,7 @@ function DateFilter({ preset,setPreset,customFrom,setCustomFrom,customTo,setCust
         <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth={1.6}><path d="M6 9l6 6 6-6"/></svg>
       </button>
       {open&&(
-        <div style={{position:'absolute',top:'calc(100% + 6px)',right:0,zIndex:200,background:'var(--surface)',border:'1px solid var(--line)',borderRadius:10,padding:12,width:300,boxShadow:'0 16px 40px rgba(0,0,0,.25)'}}>
+        <div style={{position:'absolute',top:'calc(100% + 6px)',right:0,left:'auto',zIndex:200,background:'var(--surface)',border:'1px solid var(--line)',borderRadius:10,padding:12,width:280,boxShadow:'0 16px 40px rgba(0,0,0,.25)',maxHeight:'90vh',overflowY:'auto'}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,marginBottom:12}}>
             {(Object.keys(PRESET_LABELS) as DatePreset[]).map(p=>(
               <div key={p} onClick={()=>{setPreset(p);setOpen(false)}} style={{padding:'7px 10px',fontSize:12.5,borderRadius:6,cursor:'pointer',fontWeight:500,color:preset===p?'var(--text)':'var(--text-2)',background:preset===p?'var(--active)':'transparent',boxShadow:preset===p?'inset 0 0 0 1px var(--line)':'none'}}>{PRESET_LABELS[p]}</div>
@@ -309,8 +309,8 @@ function DateFilter({ preset,setPreset,customFrom,setCustomFrom,customTo,setCust
           </div>
           <div className="t-eyebrow" style={{marginBottom:7}}>Período personalizado</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
-            <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)} className="input" style={{fontSize:12.5,padding:'7px 9px',width:'100%',minWidth:0,boxSizing:'border-box'}}/>
-            <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)} className="input" style={{fontSize:12.5,padding:'7px 9px',width:'100%',minWidth:0,boxSizing:'border-box'}}/>
+            <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)} className="input" style={{fontSize:12,padding:'6px 8px',width:'100%',minWidth:0,boxSizing:'border-box'}}/>
+            <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)} className="input" style={{fontSize:12,padding:'6px 8px',width:'100%',minWidth:0,boxSizing:'border-box'}}/>
           </div>
           <button className="btn primary" style={{width:'100%',justifyContent:'center',fontSize:12.5}} onClick={()=>{if(customFrom&&customTo){setPreset('custom');setOpen(false)}}}>Aplicar</button>
         </div>
@@ -386,9 +386,9 @@ export default function Radar() {
       </div>
 
       {!detail&&(
-        <div className="tabs">
+        <div style={{overflowX:'auto',paddingBottom:4}}><div className="tabs" style={{width:'max-content'}}>
           {TABS.map(t=><button key={t.key} className={`tab${tab===t.key?' active':''}`} onClick={()=>setTab(t.key)}>{t.label}</button>)}
-        </div>
+        </div></div>
       )}
 
       {error&&<div className="panel" style={{padding:'12px 16px',marginBottom:20,display:'flex',alignItems:'center',gap:8,color:'var(--danger)',fontSize:13}}><Icon name="alert"/> Erro: {error}</div>}

@@ -131,7 +131,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <img src="/logo-cs-symbol.png" alt="" className="brand-symbol" draggable={false} />
             <img src="/logo-cs-wordmark.png" alt="Costurando Sucesso" className="brand-wordmark" draggable={false} />
           </div>
-          <div className="t-eyebrow" style={{ marginTop: 12, paddingLeft: 1, letterSpacing: '.12em', fontSize: 10 }}>
+          <div className="t-eyebrow" style={{ marginTop: 10, letterSpacing: '.14em', fontSize: 9.5, textAlign: 'center' }}>
             WPP Campanhas
           </div>
         </div>
@@ -228,14 +228,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {/* Topbar sticky */}
         <header
           className="flex items-center justify-between sticky top-0 z-20"
+          style={{ minHeight: 56 }}
           style={{
-            padding: '16px 40px',
+            padding: '0 36px',
             borderBottom: '1px solid var(--glass-border)',
             background: 'var(--glass-header)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
           }}
         >
+          <div style={{ maxWidth: 1440, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div className="flex items-center gap-3">
             <h1 style={{
               fontFamily: "'Barlow Condensed', sans-serif",
@@ -292,11 +294,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             )}
             {tema === 'dark' ? 'Claro' : 'Escuro'}
           </button>
+          </div>
         </header>
 
         {/* Page content */}
-        <main style={{ padding: '28px 40px 72px', flex: 1, overflowY: 'auto', overflowX: 'visible' }}>
-          {children}
+        <main style={{ padding: '28px 0 72px', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+          <div style={{ maxWidth: 1440, width: '100%', margin: '0 auto', padding: '0 36px', boxSizing: 'border-box' }}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

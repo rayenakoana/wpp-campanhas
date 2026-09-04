@@ -297,7 +297,8 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
             </div>
           )}
           {!loading && !error && leadsFiltrados.length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{overflowX:'auto',borderRadius:14}}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
                   <th style={{ textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.6px', color: 'var(--text-3)', padding: '10px 28px', borderBottom: '1px solid var(--line-soft)', fontWeight: 600 }}>Nome</th>
@@ -317,6 +318,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
@@ -359,7 +361,8 @@ function TabTodosLeads() {
         <div style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>Erro: {error}</div>
       )}
       {!loading && !error && (
-        <table className="data-table">
+        <div style={{overflowX:'auto',borderRadius:14}}>
+          <table className="data-table">
           <thead>
             <tr>
               <th>Nome</th>
@@ -388,6 +391,7 @@ function TabTodosLeads() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
       {!loading && leads.length >= 200 && (
         <div style={{ textAlign: 'center', padding: '12px 0', fontSize: 12, color: 'var(--text-3)' }}>
