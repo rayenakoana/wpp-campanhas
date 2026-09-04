@@ -237,7 +237,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             WebkitBackdropFilter: 'blur(20px)',
           }}
         >
-          <div style={{ maxWidth: 1440, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div className="flex items-center gap-3">
             <h1 style={{
               fontFamily: "'Barlow Condensed', sans-serif",
@@ -294,7 +293,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             )}
             {tema === 'dark' ? 'Claro' : 'Escuro'}
           </button>
-          </div>
         </header>
 
         {/* Page content */}

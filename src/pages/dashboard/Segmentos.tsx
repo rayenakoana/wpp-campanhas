@@ -297,7 +297,7 @@ function PainelDetalhe({ segmento, onClose }: PainelDetalheProps) {
             </div>
           )}
           {!loading && !error && leadsFiltrados.length > 0 && (
-            <div style={{overflowX:'auto',borderRadius:14}}>
+            <div style={{overflowX:'auto',width:'100%'}}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
@@ -361,7 +361,7 @@ function TabTodosLeads() {
         <div style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>Erro: {error}</div>
       )}
       {!loading && !error && (
-        <div style={{overflowX:'auto',borderRadius:14}}>
+        <div style={{overflowX:'auto',width:'100%'}}>
           <table className="data-table">
           <thead>
             <tr>

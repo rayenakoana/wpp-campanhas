@@ -278,7 +278,7 @@ function DrawerCampanha({ campanha, onClose }: { campanha: CampanhaCompleta; onC
           )}
 
           {!loading && enviosFiltrados.length > 0 && (
-            <div style={{overflowX:'auto',borderRadius:14}}>
+            <div style={{overflowX:'auto',width:'100%'}}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
@@ -401,7 +401,7 @@ export default function Campanhas() {
       )}
 
       {!loading && !error && (
-        <div style={{overflowX:'auto',borderRadius:14}}>
+        <div style={{overflowX:'auto',width:'100%'}}>
           <table className="data-table">
           <thead>
             <tr>

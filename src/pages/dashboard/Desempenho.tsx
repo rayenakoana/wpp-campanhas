@@ -337,7 +337,7 @@ export default function Desempenho() {
           {data.campanhasRecentes.length > 0 && (
             <>
               <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>Campanhas recentes</div>
-              <div style={{overflowX:'auto',borderRadius:14}}>
+              <div style={{overflowX:'auto',width:'100%'}}>
                 <table className="data-table">
                 <thead>
                   <tr>

@@ -1035,7 +1035,7 @@ function MeusTemplates({ onNovoTemplate, refreshKey = 0 }: { onNovoTemplate: () 
       {error && <div className="panel" style={{ padding: 24, fontSize: 13, color: '#f28c94' }}>Não foi possível carregar: {error}</div>}
 
       {!loading && !error && (
-        <div style={{overflowX:'auto',borderRadius:14}}>
+        <div style={{overflowX:'auto',width:'100%'}}>
           <table className="data-table">
           <thead>
             <tr>

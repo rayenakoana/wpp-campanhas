@@ -650,3 +650,10 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
   width: 100%;
   margin: 0 auto;
 }
+
+/* ── Panel com tabela interna: sem padding extra ── */
+.panel > div[style*="overflowX"] { margin: -20px -22px; border-radius: 14px; }
+.panel > .panel-head + div[style*="overflowX"] { margin-top: 0; }
+
+/* ── Tabela sempre centralizada e ocupando 100% do container ── */
+.data-table { width: 100%; }

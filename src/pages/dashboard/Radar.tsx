@@ -308,9 +308,9 @@ function DateFilter({ preset,setPreset,customFrom,setCustomFrom,customTo,setCust
             ))}
           </div>
           <div className="t-eyebrow" style={{marginBottom:7}}>Período personalizado</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
-            <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)} className="input" style={{fontSize:12,padding:'6px 8px',width:'100%',minWidth:0,boxSizing:'border-box'}}/>
-            <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)} className="input" style={{fontSize:12,padding:'6px 8px',width:'100%',minWidth:0,boxSizing:'border-box'}}/>
+          <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:8}}>
+            <div><label className="t-muted" style={{display:'block',marginBottom:3}}>De</label><input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)} className="input" style={{fontSize:12.5,padding:'7px 10px',width:'100%',boxSizing:'border-box'}}/></div>
+            <div><label className="t-muted" style={{display:'block',marginBottom:3}}>Até</label><input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)} className="input" style={{fontSize:12.5,padding:'7px 10px',width:'100%',boxSizing:'border-box'}}/></div>
           </div>
           <button className="btn primary" style={{width:'100%',justifyContent:'center',fontSize:12.5}} onClick={()=>{if(customFrom&&customTo){setPreset('custom');setOpen(false)}}}>Aplicar</button>
         </div>
@@ -471,7 +471,7 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
       {campaignSeries.length>0&&(
         <div className="panel" style={{marginBottom:14}}>
           <div className="panel-head"><div className="panel-title">Campanhas Meta Ads <span>resumo do período</span></div></div>
-          <div style={{overflowX:'auto'}}>
+          <div style={{overflowX:'auto',width:'100%'}}>
             <table className="data-table">
               <thead><tr><th>Campanha</th><th className="r">Leads</th><th className="r">Alcance</th><th className="r">Freq.</th><th className="r">Conversas</th><th className="r">CTR</th><th className="r">CPL</th><th className="r">Gasto</th></tr></thead>
               <tbody>
@@ -833,7 +833,7 @@ function DetailView({series,onBack}:{series:CampaignSeries;onBack:()=>void}) {
 
       <div className="panel">
         <div className="panel-head"><div className="panel-title">Dados diários</div></div>
-        <div style={{overflowX:'auto'}}>
+        <div style={{overflowX:'auto',width:'100%'}}>
           <table className="data-table">
             <thead><tr><th>Data</th><th className="r">Leads</th><th className="r">Alcance</th><th className="r">Freq.</th><th className="r">Impressões</th><th className="r">Cliques</th><th className="r">CTR</th><th className="r">Gasto</th><th className="r">CPL</th></tr></thead>
             <tbody>
