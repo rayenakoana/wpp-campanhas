@@ -114,8 +114,11 @@ function timeSince(iso: string) {
 
 // ─── Fetches ─────────────────────────────────────────────────────────────────
 
-async function fetchMetaInsights(from: string, to: string): Promise<MetaAdsInsight[]> {
-  const url = `${SUPABASE_URL}/rest/v1/meta_ads_insights?date_start=gte.${from}&date_stop=lte.${to}&order=spend.desc&limit=1000`
+async function fetchMetaInsights(_from: string, _to: string): Promise<MetaAdsInsight[]> {
+  // O workflow N8N usa last_30d (janela deslizante) — cada execução grava um período
+  // agregado inteiro por campanha. Buscamos o registro mais recente por campanha
+  // via synced_at desc, depois deduplicamos por campaign_id no cliente.
+  const url = `${SUPABASE_URL}/rest/v1/meta_ads_insights?order=synced_at.desc&limit=500`
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -126,26 +129,26 @@ async function fetchMetaInsights(from: string, to: string): Promise<MetaAdsInsig
   if (!res.ok) throw new Error(`meta_ads_insights ${res.status}`)
   const rows: MetaAdsInsight[] = await res.json()
 
-  // Agregar por campaign_id (múltiplas linhas diárias → uma por campanha)
+  // Pegar apenas o registro mais recente por campaign_id (primeiro que aparecer,
+  // pois já está ordenado por synced_at desc)
   const byId: Record<string, MetaAdsInsight> = {}
   for (const r of rows) {
     if (!byId[r.campaign_id]) {
-      byId[r.campaign_id] = { ...r, impressions: 0, clicks: 0, spend: 0, leads: 0, purchases: 0, purchase_value: 0 }
+      byId[r.campaign_id] = {
+        ...r,
+        spend:         Number(r.spend),
+        leads:         Number(r.leads),
+        purchases:     Number(r.purchases),
+        purchase_value:Number(r.purchase_value),
+        impressions:   Number(r.impressions),
+        clicks:        Number(r.clicks),
+        cpl:           Number(r.cpl),
+        roas:          Number(r.roas),
+      }
     }
-    const agg = byId[r.campaign_id]
-    agg.impressions    += Number(r.impressions)
-    agg.clicks         += Number(r.clicks)
-    agg.spend          += Number(r.spend)
-    agg.leads          += Number(r.leads)
-    agg.purchases      += Number(r.purchases)
-    agg.purchase_value += Number(r.purchase_value)
   }
 
-  return Object.values(byId).map(r => ({
-    ...r,
-    cpl:  r.leads > 0 ? r.spend / r.leads : 0,
-    roas: r.spend > 0 ? r.purchase_value / r.spend : 0,
-  })).sort((a, b) => b.spend - a.spend)
+  return Object.values(byId).sort((a, b) => b.spend - a.spend)
 }
 
 async function fetchWppCampanhas(from: string, to: string): Promise<WppCampanha[]> {
