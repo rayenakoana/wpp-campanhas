@@ -696,7 +696,7 @@ function InsightsView({campaignSeries,totalLeads,totalConversations,avgFreq}:{
 
   for (const s of campaignSeries) {
     if (s.avg_frequency>=4) insights.push({type:'warn',title:`${s.campaign_name.split(']')[0].replace('[','').trim()} com frequência crítica — ${s.avg_frequency.toFixed(1)}×`,body:`Frequência acima de 4× indica que o mesmo usuário está vendo o anúncio repetido demais. O CPL tende a subir com o público saturado. Considere pausar por 7 dias ou expandir o público-alvo.`})
-    else if (s.avg_frequency>=3) insights.push({type:'warn',title:`${s.campaign_name.split(']')[0].replace('[','').trim()} se aproximando da saturação — ${s.avg_frequency.toFixed(1)}×`,body:`Frequência próxima de 3× começa a elevar o CPL. Monitore os próximos dias: se o CPL subir mais de 20%, pausar ou trocar o criativo são boas opções.`})
+    else if (s.avg_frequency>=2.5) insights.push({type:'warn',title:`${s.campaign_name.split(']')[0].replace('[','').trim()} se aproximando da saturação — ${s.avg_frequency.toFixed(1)}×`,body:`Frequência acima de 2.5× começa a elevar o CPL em campanhas de remarketing. Monitore os próximos dias: se o CPL subir mais de 20%, pausar ou trocar o criativo são boas opções.`})
     if (s.conversion_rate_ranking==='below_average') insights.push({type:'warn',title:`Taxa de conversão abaixo da média — ${s.campaign_name.split(']')[0].replace('[','').trim()}`,body:`A Meta avalia que esse anúncio converte menos que concorrentes com o mesmo objetivo e público. Isso pode indicar que o criativo gera curiosidade mas não urgência, ou que a landing page (WhatsApp) tem atrito no primeiro contato.`})
     if (s.quality_ranking==='above_average') insights.push({type:'good',title:`Criativo bem avaliado pela Meta — ${s.campaign_name.split(']')[0].replace('[','').trim()}`,body:`Qualidade acima da média significa que o anúncio recebe menos feedbacks negativos que os concorrentes. Isso reduz o custo de distribuição — é um bom momento para escalar o investimento.`})
     if (s.total_conversations>0&&s.total_leads>0) {
@@ -725,7 +725,7 @@ function InsightsView({campaignSeries,totalLeads,totalConversations,avgFreq}:{
       const melhor=[...comCpl].sort((a,b)=>a.avg_cpl-b.avg_cpl)[0]
       const pior=[...comCpl].sort((a,b)=>b.avg_cpl-a.avg_cpl)[0]
       const diff=((pior.avg_cpl-melhor.avg_cpl)/melhor.avg_cpl*100)
-      if (diff>30) insights.push({type:'info',title:`CPL ${diff.toFixed(0)}% menor em ${melhor.campaign_name.split(']')[0].replace('[','').trim()}`,body:`O custo por lead dessa campanha é ${fmtBRL(melhor.avg_cpl)} vs ${fmtBRL(pior.avg_cpl)} da menos eficiente. Considere migrar parte do orçamento para o criativo/segmentação com melhor retorno.`})
+      if (diff>15) insights.push({type:'info',title:`CPL ${diff.toFixed(0)}% menor em ${melhor.campaign_name.split(']')[0].replace('[','').trim()}`,body:`O custo por lead dessa campanha é ${fmtBRL(melhor.avg_cpl)} vs ${fmtBRL(pior.avg_cpl)} da outra. Considere migrar parte do orçamento para o criativo/segmentação com melhor retorno.`})
     }
   }
 
@@ -733,18 +733,16 @@ function InsightsView({campaignSeries,totalLeads,totalConversations,avgFreq}:{
   for (const s of campaignSeries) {
     const diasSemLead=s.points.filter(p=>p.leads===0).length
     const pct=s.points.length>0?(diasSemLead/s.points.length)*100:0
-    if (pct>=30&&s.points.length>=7) insights.push({type:'warn',title:`${diasSemLead} dias sem lead — ${s.campaign_name.split(']')[0].replace('[','').trim()}`,body:`${pct.toFixed(0)}% dos dias no período não gerou nenhum lead. Isso pode indicar pausas frequentes na veiculação, limite de orçamento diário esgotando cedo, ou períodos de baixa entrega pela Meta. Vale revisar o calendário de veiculação.`})
+    if (pct>=20&&s.points.length>=5) insights.push({type:'warn',title:`${diasSemLead} de ${s.points.length} dias sem lead — ${s.campaign_name.split(']')[0].replace('[','').trim()}`,body:`${pct.toFixed(0)}% dos dias no período não gerou nenhum lead. Isso pode indicar pausas na veiculação, orçamento diário esgotando cedo, ou períodos de baixa entrega pela Meta. Vale revisar o calendário de veiculação.`})
   }
 
-  // Gasto total alto sem leads proporcionais
+  // Gasto total com CPL — sempre mostra o CPL atual como referência
   for (const s of campaignSeries) {
-    if (s.total_spend>200&&s.avg_cpl>100) insights.push({type:'warn',title:`CPL elevado em ${s.campaign_name.split(']')[0].replace('[','').trim()} — ${fmtBRL(s.avg_cpl)}`,body:`Com ${fmtBRL(s.total_spend)} investidos e CPL de ${fmtBRL(s.avg_cpl)}, o custo de aquisição está alto para campanhas de WhatsApp. Testar novos criativos ou reduzir o público para aumentar a relevância pode melhorar a performance.`})
+    if (s.total_spend>50&&s.avg_cpl>0) {
+      const ref = s.avg_cpl>80?'alto para campanhas de WhatsApp — testar novos criativos pode reduzir o custo':s.avg_cpl>40?'moderado — há espaço para otimização de criativo e segmentação':'dentro do esperado para campanhas de remarketing via WhatsApp'
+      insights.push({type: s.avg_cpl>80?'warn':s.avg_cpl>40?'info':'good', title:`CPL de ${fmtBRL(s.avg_cpl)} em ${s.campaign_name.split(']')[0].replace('[','').trim()}`,body:`Com ${fmtBRL(s.total_spend)} investidos no período, o custo por lead está ${ref}.`})
+    }
   }
-
-  // Alcance total zerado — possível problema de dados
-  const totalReachCalc=campaignSeries.reduce((s,c)=>s+c.total_reach,0)
-  const totalLeadsCalc=campaignSeries.reduce((s,c)=>s+c.total_leads,0)
-  if (totalReachCalc===0&&totalLeadsCalc>0&&campaignSeries.length>0) insights.push({type:'info',title:'Dados de alcance não disponíveis',body:`A Meta não retornou dados de alcance para o período selecionado. Isso é comum em contas com menos de 7 dias de veiculação ou quando o período filtrado é muito curto. Tente selecionar "Últimos 30 dias" para ver os dados completos.`})
 
   if (insights.length===0) return (
     <div className="panel" style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:40}}>
