@@ -565,7 +565,7 @@ function CampanhaView({campaignSeries,wppCampanhas,subTab,setSubTab,onDetail}:{
             <tbody>
               {wppCampanhas.map(c=>(
                 <tr key={c.id}>
-                  <td><div className="row-title">{c.name}</div><div className="row-sub">{c.status==='completed'?'Concluída':c.status==='running'?'Em andamento':c.status}{c.completed_at?` · ${new Date(c.completed_at).toLocaleDateString('pt-BR)}`:''}</div></td>
+                  <td><div className="row-title">{c.name}</div><div className="row-sub">{c.status==='completed'?'Concluída':c.status==='running'?'Em andamento':c.status}{c.completed_at?` · ${new Date(c.completed_at).toLocaleDateString('pt-BR')}`:''}</div></td>
                   <td className="r cell-num num">{fmtNum(c.total_envios)}</td>
                   <td className="r num">{fmtNum(c.entregues)} <span style={{color:'var(--text-3)',fontSize:11.5}}>{c.total_envios>0?`${((c.entregues/c.total_envios)*100).toFixed(0)}%`:''}</span></td>
                   <td className="r num">{fmtNum(c.lidos)} <span style={{color:'var(--text-3)',fontSize:11.5}}>{c.entregues>0?`${((c.lidos/c.entregues)*100).toFixed(0)}%`:''}</span></td>
