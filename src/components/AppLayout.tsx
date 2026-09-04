@@ -228,8 +228,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {/* Topbar sticky */}
         <header
           className="flex items-center justify-between sticky top-0 z-20"
-          style={{ minHeight: 56 }}
           style={{
+            minHeight: 56,
             padding: '0 36px',
             borderBottom: '1px solid var(--glass-border)',
             background: 'var(--glass-header)',
