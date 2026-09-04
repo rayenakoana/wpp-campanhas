@@ -161,9 +161,9 @@ function buildCampaignSeries(rows: MetaAdsInsight[]): CampaignSeries[] {
       total_reach, avg_frequency,
       avg_cpl: total_leads > 0 ? total_spend/total_leads : 0,
       total_conversations,
-      quality_ranking: latest.quality_ranking,
-      engagement_rate_ranking: latest.engagement_rate_ranking,
-      conversion_rate_ranking: latest.conversion_rate_ranking,
+      quality_ranking: latest.quality_ranking && latest.quality_ranking.toUpperCase()!=='UNKNOWN' ? latest.quality_ranking.toLowerCase() : null,
+      engagement_rate_ranking: latest.engagement_rate_ranking && latest.engagement_rate_ranking.toUpperCase()!=='UNKNOWN' ? latest.engagement_rate_ranking.toLowerCase() : null,
+      conversion_rate_ranking: latest.conversion_rate_ranking && latest.conversion_rate_ranking.toUpperCase()!=='UNKNOWN' ? latest.conversion_rate_ranking.toLowerCase() : null,
     }
   }).sort((a,b) => b.total_spend - a.total_spend)
 }
@@ -717,6 +717,34 @@ function InsightsView({campaignSeries,totalLeads,totalConversations,avgFreq}:{
   }
 
   if (avgFreq<1.5&&campaignSeries.length>0) insights.push({type:'info',title:'Frequência baixa — público ainda tem espaço para crescer',body:`Frequência média de ${avgFreq.toFixed(1)}× indica que o público ainda não viu os anúncios o suficiente. Há margem para aumentar o orçamento ou ampliar o alcance sem risco de saturação.`})
+
+  // CPL por campanha — identificar a mais eficiente
+  if (campaignSeries.length>=2) {
+    const comCpl=campaignSeries.filter(s=>s.avg_cpl>0)
+    if (comCpl.length>=2) {
+      const melhor=[...comCpl].sort((a,b)=>a.avg_cpl-b.avg_cpl)[0]
+      const pior=[...comCpl].sort((a,b)=>b.avg_cpl-a.avg_cpl)[0]
+      const diff=((pior.avg_cpl-melhor.avg_cpl)/melhor.avg_cpl*100)
+      if (diff>30) insights.push({type:'info',title:`CPL ${diff.toFixed(0)}% menor em ${melhor.campaign_name.split(']')[0].replace('[','').trim()}`,body:`O custo por lead dessa campanha é ${fmtBRL(melhor.avg_cpl)} vs ${fmtBRL(pior.avg_cpl)} da menos eficiente. Considere migrar parte do orçamento para o criativo/segmentação com melhor retorno.`})
+    }
+  }
+
+  // Dias sem nenhum lead — identifica campanhas com buracos
+  for (const s of campaignSeries) {
+    const diasSemLead=s.points.filter(p=>p.leads===0).length
+    const pct=s.points.length>0?(diasSemLead/s.points.length)*100:0
+    if (pct>=30&&s.points.length>=7) insights.push({type:'warn',title:`${diasSemLead} dias sem lead — ${s.campaign_name.split(']')[0].replace('[','').trim()}`,body:`${pct.toFixed(0)}% dos dias no período não gerou nenhum lead. Isso pode indicar pausas frequentes na veiculação, limite de orçamento diário esgotando cedo, ou períodos de baixa entrega pela Meta. Vale revisar o calendário de veiculação.`})
+  }
+
+  // Gasto total alto sem leads proporcionais
+  for (const s of campaignSeries) {
+    if (s.total_spend>200&&s.avg_cpl>100) insights.push({type:'warn',title:`CPL elevado em ${s.campaign_name.split(']')[0].replace('[','').trim()} — ${fmtBRL(s.avg_cpl)}`,body:`Com ${fmtBRL(s.total_spend)} investidos e CPL de ${fmtBRL(s.avg_cpl)}, o custo de aquisição está alto para campanhas de WhatsApp. Testar novos criativos ou reduzir o público para aumentar a relevância pode melhorar a performance.`})
+  }
+
+  // Alcance total zerado — possível problema de dados
+  const totalReachCalc=campaignSeries.reduce((s,c)=>s+c.total_reach,0)
+  const totalLeadsCalc=campaignSeries.reduce((s,c)=>s+c.total_leads,0)
+  if (totalReachCalc===0&&totalLeadsCalc>0&&campaignSeries.length>0) insights.push({type:'info',title:'Dados de alcance não disponíveis',body:`A Meta não retornou dados de alcance para o período selecionado. Isso é comum em contas com menos de 7 dias de veiculação ou quando o período filtrado é muito curto. Tente selecionar "Últimos 30 dias" para ver os dados completos.`})
 
   if (insights.length===0) return (
     <div className="panel" style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:40}}>
