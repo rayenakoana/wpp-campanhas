@@ -361,13 +361,15 @@ export default function Radar() {
         <DateFilter preset={preset} setPreset={setPreset} customFrom={customFrom} setCustomFrom={setCustomFrom} customTo={customTo} setCustomTo={setCustomTo} label={dateLabel} />
       </div>
 
-      <div className="tabs">
-        {(['geral', 'campanha', 'funil'] as Tab[]).map(t => (
-          <button key={t} className={`tab${tab === t ? ' active' : ''}`} onClick={() => { setTab(t); setDetail(null) }}>
-            {t === 'geral' ? 'Visão Geral' : t === 'campanha' ? 'Por Campanha' : 'Por Funil'}
-          </button>
-        ))}
-      </div>
+      {!detail && (
+        <div className="tabs">
+          {(['geral', 'campanha', 'funil'] as Tab[]).map(t => (
+            <button key={t} className={`tab${tab === t ? ' active' : ''}`} onClick={() => { setTab(t); setDetail(null) }}>
+              {t === 'geral' ? 'Visão Geral' : t === 'campanha' ? 'Por Campanha' : 'Por Funil'}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && (
         <div className="panel" style={{ padding: '12px 16px', marginBottom: 20, color: '#f87171', fontSize: 13 }}>
@@ -687,19 +689,37 @@ function DetailView({ campaign, onBack }: { campaign: MetaAdsInsight; onBack: ()
     : '—'
 
   return (
-    <>
-      <div onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-2)', cursor: 'pointer', marginBottom: 16, fontWeight: 500 }}
+    <div style={{ maxWidth: '100%' }}>
+      {/* Voltar */}
+      <div onClick={onBack} style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        fontSize: 13, color: 'var(--text-2)', cursor: 'pointer',
+        marginBottom: 20, fontWeight: 500,
+      }}
         onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
         onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-2)')}>
         ← Voltar
       </div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 22 }}>{campaign.campaign_name}</h2>
-        <div style={{ color: 'var(--text-3)', fontSize: 12.5, marginTop: 4 }}>
+
+      {/* Título */}
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{
+          fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700,
+          fontSize: 'clamp(18px, 3vw, 26px)', lineHeight: 1.2,
+          wordBreak: 'break-word',
+        }}>{campaign.campaign_name}</h2>
+        <div style={{ color: 'var(--text-3)', fontSize: 12.5, marginTop: 6 }}>
           {campaign.date_start} → {campaign.date_stop} · Sincronizado {timeSince(campaign.synced_at)}
         </div>
       </div>
-      <div className="kpi-row" style={{ marginBottom: 20 }}>
+
+      {/* KPIs — 2 colunas em mobile, 4 em desktop */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: 12,
+        marginBottom: 20,
+      }}>
         <div className="kpi-card">
           <div className="kpi-label"><span className="base-mark"/> Leads</div>
           <div className="kpi-value num">{fmtNum(campaign.leads)}</div>
@@ -719,12 +739,20 @@ function DetailView({ campaign, onBack }: { campaign: MetaAdsInsight; onBack: ()
           <div className="kpi-value num" style={{ color: Number(campaign.roas) > 0 ? 'var(--gold)' : 'var(--text)' }}>
             {Number(campaign.roas) > 0 ? fmtROAS(Number(campaign.roas)) : '—'}
           </div>
-          <div className="kpi-sub num">{Number(campaign.purchase_value) > 0 ? fmtBRL(Number(campaign.purchase_value)) : 'sem receita atribuída'}</div>
+          <div className="kpi-sub num">
+            {Number(campaign.purchase_value) > 0 ? fmtBRL(Number(campaign.purchase_value)) : 'sem receita atribuída'}
+          </div>
         </div>
       </div>
+
+      {/* Todas as métricas — grid responsivo */}
       <div className="panel">
         <div className="panel-head"><div className="panel-title">Todas as métricas</div></div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '20px 24px',
+        }}>
           {[
             { l: 'Impressões', v: fmtNum(campaign.impressions) },
             { l: 'Cliques',    v: fmtNum(campaign.clicks) },
@@ -737,12 +765,12 @@ function DetailView({ campaign, onBack }: { campaign: MetaAdsInsight; onBack: ()
             { l: 'ROAS',       v: Number(campaign.roas) > 0 ? fmtROAS(Number(campaign.roas)) : '—' },
           ].map(m => (
             <div key={m.l}>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 4, fontWeight: 500 }}>{m.l}</div>
-              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 20 }}>{m.v}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.5px' }}>{m.l}</div>
+              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 'clamp(16px, 2.5vw, 22px)' }}>{m.v}</div>
             </div>
           ))}
         </div>
       </div>
-    </>
+    </div>
   )
 }
