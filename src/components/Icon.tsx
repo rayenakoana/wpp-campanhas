@@ -3,11 +3,12 @@
  * Uso: <Icon name="alert" /> — herda cor via currentColor.
  * Tamanho padrão 14px via classe .ico (index.css); sobrescreva com size.
  */
+import type { ReactNode } from 'react'
 type IconName =
   | 'alert' | 'check' | 'info' | 'x' | 'arrow-right' | 'arrow-left'
   | 'trend-up' | 'trend-down' | 'clock' | 'dot' | 'external'
 
-const PATHS: Record<IconName, JSX.Element> = {
+const PATHS: Record<IconName, ReactNode> = {
   alert: <><path d="M12 3.5 21 19H3L12 3.5Z" /><path d="M12 9.5v4.5M12 17h.01" /></>,
   check: <path d="M4.5 12.5 9.5 17.5 19.5 7" />,
   info: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5M12 8h.01" /></>,
