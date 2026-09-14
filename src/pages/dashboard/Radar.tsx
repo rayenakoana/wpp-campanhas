@@ -5,26 +5,13 @@ import Icon, { IconBadge } from '../../components/Icon'
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface MetaAdsInsight {
-  id: string
-  campaign_id: string
-  campaign_name: string
-  date_start: string
-  date_stop: string
-  impressions: number
-  clicks: number
-  spend: number
-  leads: number
-  purchases: number
-  purchase_value: number
-  cpl: number
-  roas: number
-  synced_at: string
-  reach: number | null
-  frequency: number | null
+  id: string; campaign_id: string; campaign_name: string
+  date_start: string; date_stop: string
+  impressions: number; clicks: number; spend: number; leads: number
+  purchases: number; purchase_value: number; cpl: number; roas: number
+  synced_at: string; reach: number | null; frequency: number | null
   conversations_started: number | null
-  quality_ranking: string | null
-  engagement_rate_ranking: string | null
-  conversion_rate_ranking: string | null
+  quality_ranking: string | null; engagement_rate_ranking: string | null; conversion_rate_ranking: string | null
 }
 
 interface WppCampanha {
@@ -51,8 +38,18 @@ interface CampaignSeries {
   quality_ranking: string | null; engagement_rate_ranking: string | null; conversion_rate_ranking: string | null
 }
 
-type Tab = 'geral' | 'campanha' | 'funil' | 'saude' | 'insights'
-type SubTab = 'wpp' | 'ads'
+interface CapiEvent {
+  id: number; deal_id: string; pipeline_id: string; stage_id: string
+  evento: string; phone: string | null; email: string | null
+  ctwa_clid: string | null; pixel_id: string | null; fired_at: string
+}
+
+interface LeadHistory {
+  phone: string; email: string | null; eventos: CapiEvent[]
+}
+
+type Tab = 'geral' | 'funil' | 'meta' | 'wpp'
+type MetaSubTab = 'campanhas' | 'saude' | 'insights'
 type ChartMetric = 'leads' | 'spend' | 'cpl' | 'reach' | 'frequency'
 type DatePreset = 'today' | 'yesterday' | '7d' | '30d' | 'this_month' | 'last_month'
 
@@ -60,35 +57,55 @@ const SUPABASE_URL = 'https://syecwttpsvrmhdvinjmt.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5ZWN3dHRwc3ZybWhkdmluam10Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Mzk1NDgxMywiZXhwIjoyMDk5NTMwODEzfQ.4q7pNim34eP-n38pANB9g7Lud-Y20TU4-VFA5f5WaGo'
 const CAMPAIGN_COLORS = ['#C8172A', '#E8A020', '#2E7D52', '#5B6EE8', '#9C27B0']
 
-const STAGE_EVENT_MAP: Record<string, string> = { '69d7f7289d0388002677317a': 'Lead' }
-const EVENT_ORDER = ['Lead', 'CompleteRegistration', 'Schedule', 'InitiateCheckout', 'Purchase']
+const PIPELINE_NAMES: Record<string, string> = {
+  '699effbf7b4346001f83c691': 'Segredos da Confecção',
+  '699f00342be5b20013e23f9c': 'Imersão Paraguai',
+  '699f332c5c43de0019d4f9ef': 'Supplytex',
+  '69d7f7289d03880026773178': 'Funil Diagnóstico',
+}
+
+const STAGE_EVENT_MAP: Record<string, string> = {
+  '699effbf7b4346001f83c694': 'Lead',
+  '699effbf7b4346001f83c695': 'CompleteRegistration',
+  '699effbf7b4346001f83c696': 'InitiateCheckout',
+  '699effbf7b4346001f83c697': 'Purchase',
+  '699f00342be5b20013e23f9f': 'Lead',
+  '699f00342be5b20013e23fa0': 'CompleteRegistration',
+  '6a3be4ae75ae6d001e865483': 'Schedule',
+  '699f00342be5b20013e23fa1': 'InitiateCheckout',
+  '699f00342be5b20013e23fa2': 'Purchase',
+  '6a79cd940da205002e416282': 'AddToCart',
+  '699f332c5c43de0019d4f9f2': 'Lead',
+  '699f332c5c43de0019d4f9f3': 'CompleteRegistration',
+  '699f332c5c43de0019d4f9f4': 'InitiateCheckout',
+  '699f332c5c43de0019d4f9f5': 'Purchase',
+  '69d7f7289d0388002677317a': 'Lead',
+  '69d7f7299d0388002677317b': 'Lead',
+  '69d7f7299d0388002677317c': 'CompleteRegistration',
+  '6a8f2037bc096b002572761c': 'Schedule',
+}
+
+const EVENT_ORDER = ['Lead', 'CompleteRegistration', 'AddToCart', 'Schedule', 'InitiateCheckout', 'Purchase']
 const EVENT_LABELS: Record<string, { label: string; sub: string; gold: boolean }> = {
   Lead:                 { label: 'Lead',                 sub: 'Contato Feito / Realizado',  gold: false },
   CompleteRegistration: { label: 'CompleteRegistration', sub: 'Identificação de Interesse', gold: false },
+  AddToCart:            { label: 'AddToCart',            sub: 'Interesse confirmado',       gold: false },
   Schedule:             { label: 'Schedule',             sub: 'Reunião',                    gold: false },
   InitiateCheckout:     { label: 'InitiateCheckout',     sub: 'Negociação',                 gold: false },
   Purchase:             { label: 'Purchase',             sub: 'Fechado',                    gold: true  },
 }
+
 const PRESET_LABELS: Record<DatePreset, string> = {
   today: 'Hoje', yesterday: 'Ontem', '7d': 'Últimos 7 dias',
   '30d': 'Últimos 30 dias', this_month: 'Este mês', last_month: 'Mês passado',
 }
-const FUNIL_MAP = [
-  { name: 'Segredos da Confecção', pixel: '2078737449416859', kws: ['SEGREDOS','SC |','SC|'] },
-  { name: 'Imersão Paraguai',       pixel: '1012804927965896', kws: ['PARAGUAI','PY |','PY|'] },
-  { name: 'Supplytex',              pixel: '961390553583140',  kws: ['SUPPLYTEX','SX |','SX|'] },
-  { name: 'Funil Diagnóstico',      pixel: '2006103380028816', kws: ['DIAGNÓSTICO','DIAG |','DIAG|'] },
-]
+
 
 const RANKING_LABEL: Record<string, string> = {
-  above_average: 'Acima da média',
-  average: 'Na média',
-  below_average: 'Abaixo da média',
+  above_average: 'Acima da média', average: 'Na média', below_average: 'Abaixo da média',
 }
 const RANKING_COLOR: Record<string, string> = {
-  above_average: 'var(--green)',
-  average: 'var(--gold)',
-  below_average: 'var(--danger)',
+  above_average: 'var(--green)', average: 'var(--gold)', below_average: 'var(--danger)',
 }
 
 function getDateRange(preset: DatePreset): { from: string; to: string } {
@@ -107,9 +124,20 @@ function fmtBRL(v: number) { if (v >= 1000) return `R$ ${(v/1000).toFixed(1).rep
 function fmtNum(v: number) { return v.toLocaleString('pt-BR') }
 function fmtROAS(v: number) { return `${Number(v).toFixed(1).replace('.',',')}x` }
 function fmtShortDate(d: string) { const [,m,day] = d.split('-'); return `${day}/${m}` }
+function fmtDateTime(iso: string) {
+  const d = new Date(iso)
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
 function timeSince(iso: string) {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
   if (diff < 1) return 'agora'; if (diff < 60) return `há ${diff} min`; return `há ${Math.floor(diff/60)}h`
+}
+function fmtPhone(p: string | null) {
+  if (!p) return '—'
+  const d = p.replace(/\D/g, '')
+  if (d.length === 13) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`
+  if (d.length === 12) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`
+  return p
 }
 
 // ─── Fetches ─────────────────────────────────────────────────────────────────
@@ -143,15 +171,13 @@ function buildCampaignSeries(rows: MetaAdsInsight[]): CampaignSeries[] {
     const sorted = [...rs].sort((a,b) => a.date_start.localeCompare(b.date_start))
     const points: DailyPoint[] = sorted.map(r => ({
       date: r.date_start, leads: r.leads, spend: r.spend, cpl: r.cpl,
-      impressions: r.impressions, clicks: r.clicks,
-      reach: r.reach ?? 0, frequency: r.frequency ?? 0,
+      impressions: r.impressions, clicks: r.clicks, reach: r.reach ?? 0, frequency: r.frequency ?? 0,
     }))
     const total_leads = rs.reduce((s,r) => s+r.leads, 0)
     const total_spend = rs.reduce((s,r) => s+r.spend, 0)
     const total_reach = rs.reduce((s,r) => s+(r.reach??0), 0)
     const total_conversations = rs.reduce((s,r) => s+(r.conversations_started??0), 0)
     const avg_frequency = rs.filter(r => r.frequency).reduce((s,r,_,a) => s+(r.frequency??0)/a.length, 0)
-    // pegar ranking do registro mais recente
     const latest = rs.reduce((a,b) => a.synced_at > b.synced_at ? a : b)
     return {
       campaign_id: cid, campaign_name: rs[0].campaign_name,
@@ -194,6 +220,14 @@ async function fetchFunilSteps(): Promise<FunilStep[]> {
   const counts: Record<string,number> = {}; for (const ev of EVENT_ORDER) counts[ev]=0
   for (const row of rows) { const sid=row.last_fired_stage_id??row.stage_id; const ev=STAGE_EVENT_MAP[sid]; if (ev) counts[ev]++ }
   return EVENT_ORDER.map(ev => ({ ...EVENT_LABELS[ev], count: counts[ev] }))
+}
+
+async function fetchCapiEvents(): Promise<CapiEvent[]> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/capi_events_log?order=fired_at.desc&limit=2000`, {
+    headers: { Authorization: `Bearer ${SUPABASE_KEY}`, apikey: SUPABASE_KEY, 'Accept-Profile': 'wpp' }
+  })
+  if (!res.ok) throw new Error(`capi_events_log ${res.status}`)
+  return res.json()
 }
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
@@ -266,7 +300,7 @@ function LineChart({ series, metric, height=180 }: { series: CampaignSeries[]; m
   )
 }
 
-// ─── Ranking Badge ────────────────────────────────────────────────────────────
+// ─── Ranking Badge / Bar ──────────────────────────────────────────────────────
 
 function RankingBadge({ value }: { value: string | null }) {
   if (!value) return <span style={{color:'var(--text-3)',fontSize:12}}>—</span>
@@ -319,11 +353,71 @@ function DateFilter({ preset,setPreset,customFrom,setCustomFrom,customTo,setCust
   )
 }
 
+// ─── Modal Lead ───────────────────────────────────────────────────────────────
+
+function LeadModal({ history, onClose }: { history: LeadHistory; onClose: () => void }) {
+  const tempoNoFunil = () => {
+    if (history.eventos.length === 0) return '—'
+    const primeiro = new Date(history.eventos[history.eventos.length - 1].fired_at)
+    const ultimo = new Date(history.eventos[0].fired_at)
+    const dias = Math.floor((ultimo.getTime() - primeiro.getTime()) / (1000 * 60 * 60 * 24))
+    return dias === 0 ? 'Mesmo dia' : `${dias} dia${dias > 1 ? 's' : ''}`
+  }
+  const temCtwa = history.eventos.some(e => e.ctwa_clid)
+
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,.55)'}} onClick={onClose}>
+      <div style={{background:'var(--surface)',border:'1px solid var(--line)',borderRadius:12,padding:24,width:'min(560px,95vw)',maxHeight:'85vh',overflowY:'auto',boxShadow:'0 24px 64px rgba(0,0,0,.4)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+          <div>
+            <div className="t-title" style={{fontSize:15,marginBottom:4}}>{fmtPhone(history.phone)}</div>
+            <div className="t-muted">{history.email || 'Sem e-mail cadastrado'}</div>
+          </div>
+          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+            {temCtwa&&<span style={{fontSize:11,fontWeight:600,padding:'3px 8px',borderRadius:4,background:'rgba(200,23,42,.12)',color:'var(--red)'}}>CTWA</span>}
+            <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-3)',fontSize:20,lineHeight:1,padding:4}}>×</button>
+          </div>
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
+          {[
+            {label:'Eventos disparados',value:String(history.eventos.length)},
+            {label:'Tempo no funil',value:tempoNoFunil()},
+            {label:'Primeiro contato',value:history.eventos.length>0?fmtDateTime(history.eventos[history.eventos.length-1].fired_at):'—'},
+            {label:'Último evento',value:history.eventos.length>0?fmtDateTime(history.eventos[0].fired_at):'—'},
+          ].map(k=>(
+            <div key={k.label} style={{padding:'10px 12px',background:'var(--surface-2)',borderRadius:8,border:'1px solid var(--line)'}}>
+              <div className="t-muted" style={{marginBottom:4}}>{k.label}</div>
+              <div style={{fontFamily:'Barlow Condensed, sans-serif',fontWeight:700,fontSize:18,color:'var(--text)'}}>{k.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="t-eyebrow" style={{marginBottom:10}}>Histórico de eventos</div>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {history.eventos.map((ev)=>(
+            <div key={ev.id} style={{display:'flex',gap:12,alignItems:'flex-start',padding:'10px 12px',background:'var(--surface-2)',borderRadius:8,border:'1px solid var(--line)'}}>
+              <div style={{width:8,height:8,borderRadius:'50%',background:ev.evento==='Purchase'?'var(--gold)':'var(--red)',flexShrink:0,marginTop:4}}/>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}>
+                  <span style={{fontWeight:600,fontSize:13,color:ev.evento==='Purchase'?'var(--gold)':'var(--text)'}}>{ev.evento}</span>
+                  <span className="t-muted">{fmtDateTime(ev.fired_at)}</span>
+                </div>
+                <div className="t-muted" style={{marginTop:3}}>{PIPELINE_NAMES[ev.pipeline_id]??ev.pipeline_id}</div>
+                {ev.ctwa_clid&&<div style={{fontSize:11,color:'var(--red)',marginTop:3}}>CTWA atribuído</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 export default function Radar() {
   const [tab,setTab]=useState<Tab>('geral')
-  const [subTab,setSubTab]=useState<SubTab>('wpp')
   const [preset,setPreset]=useState<DatePreset|'custom'>('30d')
   const [customFrom,setCustomFrom]=useState('')
   const [customTo,setCustomTo]=useState('')
@@ -331,18 +425,26 @@ export default function Radar() {
   const [campaignSeries,setCampaignSeries]=useState<CampaignSeries[]>([])
   const [wppCampanhas,setWppCampanhas]=useState<WppCampanha[]>([])
   const [funilSteps,setFunilSteps]=useState<FunilStep[]>([])
+  const [capiEvents,setCapiEvents]=useState<CapiEvent[]>([])
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState<string|null>(null)
   const [syncedAt,setSyncedAt]=useState<string|null>(null)
   const [detail,setDetail]=useState<CampaignSeries|null>(null)
   const [dateLabel,setDateLabel]=useState('Últimos 30 dias')
+  const [selectedLead,setSelectedLead]=useState<LeadHistory|null>(null)
 
   const load=useCallback(async()=>{
     setLoading(true);setError(null)
     try {
       const range=preset==='custom'?{from:customFrom,to:customTo}:getDateRange(preset as DatePreset)
-      const [rows,wppData,funilData]=await Promise.all([fetchMetaInsights(range.from,range.to),fetchWppCampanhas(range.from,range.to),fetchFunilSteps()])
-      setAllRows(rows);setCampaignSeries(buildCampaignSeries(rows));setWppCampanhas(wppData);setFunilSteps(funilData)
+      const [rows,wppData,funilData,capiData]=await Promise.all([
+        fetchMetaInsights(range.from,range.to),
+        fetchWppCampanhas(range.from,range.to),
+        fetchFunilSteps(),
+        fetchCapiEvents(),
+      ])
+      setAllRows(rows);setCampaignSeries(buildCampaignSeries(rows));setWppCampanhas(wppData)
+      setFunilSteps(funilData);setCapiEvents(capiData)
       const latest=rows.length>0?rows.reduce((a,b)=>a.synced_at>b.synced_at?a:b):null
       setSyncedAt(latest?.synced_at??new Date().toISOString())
       setDateLabel(preset==='custom'?`${customFrom} – ${customTo}`:PRESET_LABELS[preset as DatePreset])
@@ -361,12 +463,33 @@ export default function Radar() {
   const avgFreq=campaignSeries.length>0?campaignSeries.reduce((s,c)=>s+c.avg_frequency,0)/campaignSeries.length:0
   const leadCount=funilSteps.find(s=>s.label==='Lead')?.count??0
 
+  // Agrupa eventos CAPI por telefone para o funil CRM
+  const leadsByPhone = capiEvents.reduce<Record<string, CapiEvent[]>>((acc, ev) => {
+    const key = ev.phone ?? `deal_${ev.deal_id}`
+    if (!acc[key]) acc[key] = []
+    acc[key].push(ev)
+    return acc
+  }, {})
+
+  const openLead = (phone: string) => {
+    const eventos = leadsByPhone[phone] ?? []
+    setSelectedLead({ phone, email: eventos[0]?.email ?? null, eventos })
+  }
+
+  const exportCSV = (events: CapiEvent[], filename: string) => {
+    const header = 'Telefone,Email,Evento,Pipeline,Pixel,CTWA,Data'
+    const rows = events.map(e =>
+      [e.phone??'',e.email??'',e.evento,PIPELINE_NAMES[e.pipeline_id??'']??e.pipeline_id??'',e.pixel_id??'',e.ctwa_clid??'',fmtDateTime(e.fired_at)].join(',')
+    )
+    const blob = new Blob([header+'\n'+rows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click()
+  }
+
   const TABS: {key:Tab;label:string}[] = [
     {key:'geral',label:'Visão Geral'},
-    {key:'campanha',label:'Por Campanha'},
-    {key:'funil',label:'Por Funil'},
-    {key:'saude',label:'Saúde do Anúncio'},
-    {key:'insights',label:'Insights'},
+    {key:'funil',label:'Funil CRM'},
+    {key:'meta',label:'Meta Ads'},
+    {key:'wpp',label:'WhatsApp'},
   ]
 
   return (
@@ -399,15 +522,15 @@ export default function Radar() {
         <DetailView series={detail} onBack={()=>setDetail(null)}/>
       ):tab==='geral'?(
         <GeralView campaignSeries={campaignSeries} wppCampanhas={wppCampanhas} funilSteps={funilSteps} totalLeads={totalLeads} totalSpend={totalSpend} totalRev={totalRev} avgCPL={avgCPL} avgROAS={avgROAS} totalReach={totalReach} totalConversations={totalConversations} avgFreq={avgFreq} leadCount={leadCount}/>
-      ):tab==='campanha'?(
-        <CampanhaView campaignSeries={campaignSeries} wppCampanhas={wppCampanhas} subTab={subTab} setSubTab={setSubTab} onDetail={setDetail}/>
       ):tab==='funil'?(
-        <FunilView campaignSeries={campaignSeries} onDetail={setDetail}/>
-      ):tab==='saude'?(
-        <SaudeView campaignSeries={campaignSeries}/>
+        <FunilCRMView funilSteps={funilSteps} capiEvents={capiEvents} leadsByPhone={leadsByPhone} leadCount={leadCount} onOpenLead={openLead} onExport={exportCSV}/>
+      ):tab==='meta'?(
+        <MetaView campaignSeries={campaignSeries} totalLeads={totalLeads} totalConversations={totalConversations} avgFreq={avgFreq} onDetail={setDetail}/>
       ):(
-        <InsightsView campaignSeries={campaignSeries} totalLeads={totalLeads} totalConversations={totalConversations} avgFreq={avgFreq}/>
+        <WppView wppCampanhas={wppCampanhas}/>
       )}
+
+      {selectedLead&&<LeadModal history={selectedLead} onClose={()=>setSelectedLead(null)}/>}
     </div>
   )
 }
@@ -421,12 +544,10 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
 }) {
   const [metric,setMetric]=useState<ChartMetric>('leads')
   const totalWppEnvios=wppCampanhas.reduce((s,c)=>s+c.total_envios,0)
-  const totalWppEntregues=wppCampanhas.reduce((s,c)=>s+c.entregues,0)
   const totalWppLidos=wppCampanhas.reduce((s,c)=>s+c.lidos,0)
   const totalWppCusto=wppCampanhas.reduce((s,c)=>s+c.custo_total,0)
   const convRate=totalLeads>0?((totalConversations/totalLeads)*100):0
   const freqAlert=avgFreq>=3
-
   const METRICS:{key:ChartMetric;label:string}[]=[
     {key:'leads',label:'Leads'},{key:'spend',label:'Gasto'},{key:'cpl',label:'CPL'},
     {key:'reach',label:'Alcance'},{key:'frequency',label:'Frequência'},
@@ -434,7 +555,6 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
 
   return (
     <>
-      <div className="t-eyebrow" style={{marginBottom:8}}>Meta Ads</div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:20}}>
         {[
           {label:'Leads gerados',value:fmtNum(totalLeads),sub:`${campaignSeries.length} campanhas`},
@@ -443,11 +563,13 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
           {label:'Gasto total',value:fmtBRL(totalSpend),sub:`CPL ${fmtBRL(avgCPL)}`},
           {label:'Conversas WhatsApp',value:totalConversations>0?fmtNum(totalConversations):'—',sub:convRate>0?`${convRate.toFixed(1).replace('.',',')}% dos leads`:'aguardando dados',green:convRate>0},
           {label:'Receita atribuída',value:fmtBRL(totalRev),sub:`ROAS ${fmtROAS(avgROAS)}`,gold:true},
+          {label:'Campanhas WPP',value:fmtNum(wppCampanhas.length),sub:totalWppEnvios>0?`${fmtNum(totalWppEnvios)} disparos`:'—'},
+          {label:'Taxa de leitura WPP',value:totalWppEnvios>0?`${((totalWppLidos/totalWppEnvios)*100).toFixed(1).replace('.',',')}%`:'—',sub:totalWppCusto>0?`Custo ${fmtBRL(totalWppCusto)}`:'—'},
         ].map(k=>(
           <div key={k.label} className="kpi-card">
             <div className="kpi-label"><span className="base-mark"/> {k.label}</div>
-            <div className="kpi-value num" style={k.gold?{color:'var(--gold)'}:k.warn?{color:'var(--gold)'}:k.green?{color:'var(--green)'}:{}}>{k.value}</div>
-            <div className="kpi-sub" style={k.warn?{color:'var(--gold)'}:{}}>{k.sub}</div>
+            <div className="kpi-value num" style={(k as any).gold?{color:'var(--gold)'}:(k as any).warn?{color:'var(--gold)'}:(k as any).green?{color:'var(--green)'}:{}}>{k.value}</div>
+            <div className="kpi-sub" style={(k as any).warn?{color:'var(--gold)'}:{}}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -468,57 +590,8 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
         </div>
       )}
 
-      {campaignSeries.length>0&&(
-        <div className="panel" style={{marginBottom:14}}>
-          <div className="panel-head"><div className="panel-title">Campanhas Meta Ads <span>resumo do período</span></div></div>
-          <div style={{overflowX:'auto',width:'100%'}}>
-            <table className="data-table">
-              <thead><tr><th>Campanha</th><th className="r">Leads</th><th className="r">Alcance</th><th className="r">Freq.</th><th className="r">Conversas</th><th className="r">CTR</th><th className="r">CPL</th><th className="r">Gasto</th></tr></thead>
-              <tbody>
-                {campaignSeries.map(s=>{
-                  const ctr=s.total_impressions>0?`${((s.total_clicks/s.total_impressions)*100).toFixed(2).replace('.',',')}%`:'—'
-                  const freqWarn=s.avg_frequency>=3
-                  return (
-                    <tr key={s.campaign_id}>
-                      <td><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{width:8,height:8,borderRadius:'50%',background:s.color,flexShrink:0}}/><span className="row-title" style={{fontSize:12.5}}>{s.campaign_name.replace(/\[|\]/g,' ').replace(/\s+/g,' ').trim()}</span></div></td>
-                      <td className="r cell-num num">{fmtNum(s.total_leads)}</td>
-                      <td className="r num">{s.total_reach>0?fmtNum(s.total_reach):'—'}</td>
-                      <td className="r num" style={freqWarn?{color:'var(--gold)'}:{}}>{s.avg_frequency>0?s.avg_frequency.toFixed(2)+'×':'—'}</td>
-                      <td className="r num">{s.total_conversations>0?fmtNum(s.total_conversations):'—'}</td>
-                      <td className="r num">{ctr}</td>
-                      <td className="r num">{fmtBRL(s.avg_cpl)}</td>
-                      <td className="r num">{fmtBRL(s.total_spend)}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {wppCampanhas.length>0&&(
-        <>
-          <div className="t-eyebrow" style={{marginBottom:8}}>Campanhas WhatsApp</div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:14}}>
-            {[
-              {label:'Disparos totais',value:fmtNum(totalWppEnvios),sub:`${wppCampanhas.length} campanhas`},
-              {label:'Entregues',value:fmtNum(totalWppEntregues),sub:totalWppEnvios>0?`${((totalWppEntregues/totalWppEnvios)*100).toFixed(1).replace('.',',')}%`:'—'},
-              {label:'Taxa de leitura',value:totalWppEntregues>0?`${((totalWppLidos/totalWppEntregues)*100).toFixed(1).replace('.',',')}%`:'—',sub:`${fmtNum(totalWppLidos)} lidas`},
-              {label:'Custo WPP',value:fmtBRL(totalWppCusto),sub:totalWppEnvios>0?`${fmtBRL(totalWppCusto/totalWppEnvios)}/disparo`:'—'},
-            ].map(k=>(
-              <div key={k.label} className="kpi-card">
-                <div className="kpi-label"><span className="base-mark"/> {k.label}</div>
-                <div className="kpi-value num">{k.value}</div>
-                <div className="kpi-sub">{k.sub}</div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
       <div className="panel">
-        <div className="panel-head"><div className="panel-title">Funil CRM → CAPI <span>disparos registrados</span></div></div>
+        <div className="panel-head"><div className="panel-title">Funil CRM → CAPI <span>posição atual dos deals</span></div></div>
         {funilSteps.every(s=>s.count===0)?(
           <div style={{fontSize:13,color:'var(--text-3)',padding:'16px 0',textAlign:'center'}}>Aguardando disparos registrados pelo workflow N8N.</div>
         ):(
@@ -543,44 +616,191 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
   )
 }
 
-// ─── Por Campanha ─────────────────────────────────────────────────────────────
+// ─── Funil CRM ────────────────────────────────────────────────────────────────
 
-function CampanhaView({campaignSeries,wppCampanhas,subTab,setSubTab,onDetail}:{
-  campaignSeries:CampaignSeries[];wppCampanhas:WppCampanha[];subTab:SubTab;setSubTab:(s:SubTab)=>void;onDetail:(s:CampaignSeries)=>void
+function FunilCRMView({ funilSteps, capiEvents, leadsByPhone, leadCount, onOpenLead, onExport }: {
+  funilSteps: FunilStep[]; capiEvents: CapiEvent[]
+  leadsByPhone: Record<string, CapiEvent[]>; leadCount: number
+  onOpenLead: (phone: string) => void
+  onExport: (events: CapiEvent[], filename: string) => void
 }) {
+  const [pipelineFilter, setPipelineFilter] = useState<string>('all')
+  const [eventoFilter, setEventoFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+
+  // Leads únicos por telefone
+  const uniqueLeads = Object.entries(leadsByPhone).map(([phone, evs]) => {
+    const sorted = [...evs].sort((a,b) => new Date(b.fired_at).getTime() - new Date(a.fired_at).getTime())
+    const ultimoEvento = sorted[0]
+    const primeiroEvento = sorted[sorted.length - 1]
+    const diasNoFunil = Math.floor((new Date(ultimoEvento.fired_at).getTime() - new Date(primeiroEvento.fired_at).getTime()) / (1000*60*60*24))
+    return {
+      phone,
+      email: ultimoEvento.email,
+      ultimoEvento: ultimoEvento.evento,
+      pipeline_id: ultimoEvento.pipeline_id,
+      temCtwa: evs.some(e => e.ctwa_clid),
+      totalEventos: evs.length,
+      diasNoFunil,
+      ultimaAtividade: ultimoEvento.fired_at,
+    }
+  }).sort((a,b) => new Date(b.ultimaAtividade).getTime() - new Date(a.ultimaAtividade).getTime())
+
+  const filtered = uniqueLeads.filter(l => {
+    if (pipelineFilter !== 'all' && l.pipeline_id !== pipelineFilter) return false
+    if (eventoFilter !== 'all' && l.ultimoEvento !== eventoFilter) return false
+    if (search) {
+      const s = search.toLowerCase()
+      if (!l.phone.includes(s) && !(l.email??'').toLowerCase().includes(s)) return false
+    }
+    return true
+  })
+
+  const pipelines = [...new Set(capiEvents.map(e => e.pipeline_id).filter(Boolean))] as string[]
+
+  return (
+    <>
+      {/* Funil */}
+      <div className="panel" style={{marginBottom:14}}>
+        <div className="panel-head" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div className="panel-title">Funil de eventos <span>posição atual dos deals no CRM</span></div>
+        </div>
+        {funilSteps.every(s=>s.count===0)?(
+          <div style={{fontSize:13,color:'var(--text-3)',padding:'16px 0',textAlign:'center'}}>Aguardando disparos do workflow N8N.</div>
+        ):(
+          <div className="conv-funnel">
+            {funilSteps.map(step=>{
+              const pct=leadCount>0?(step.count/leadCount)*100:step.count>0?100:0
+              return (
+                <div className="conv-step" key={step.label}>
+                  <div className="step-name">{step.label}<small>{step.sub}</small></div>
+                  <div className="conv-track"><div className="conv-fill" style={{width:`${Math.min(pct,100)}%`,background:step.gold?'var(--gold)':'var(--red)',opacity:pct===0?0.15:1}}/></div>
+                  <div className="conv-nums">
+                    <span className="conv-abs num" style={{color:step.gold?'var(--gold)':step.count===0?'var(--text-3)':'var(--text)'}}>{step.count>0?fmtNum(step.count):'—'}</span>
+                    <span className="conv-rel num">{pct>0?`${pct.toFixed(1).replace('.',',')}%`:'aguardando'}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Tabela de leads */}
+      <div className="panel">
+        <div className="panel-head" style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10}}>
+          <div className="panel-title">Leads no funil <span>{filtered.length} contatos</span></div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+            <input
+              placeholder="Buscar telefone ou e-mail..."
+              value={search} onChange={e=>setSearch(e.target.value)}
+              style={{fontSize:12.5,padding:'6px 10px',borderRadius:6,border:'1px solid var(--line)',background:'var(--surface-2)',color:'var(--text)',width:200}}
+            />
+            <select value={pipelineFilter} onChange={e=>setPipelineFilter(e.target.value)} style={{fontSize:12.5,padding:'6px 10px',borderRadius:6,border:'1px solid var(--line)',background:'var(--surface-2)',color:'var(--text)'}}>
+              <option value="all">Todos os funis</option>
+              {pipelines.map(p=><option key={p} value={p}>{PIPELINE_NAMES[p]??p}</option>)}
+            </select>
+            <select value={eventoFilter} onChange={e=>setEventoFilter(e.target.value)} style={{fontSize:12.5,padding:'6px 10px',borderRadius:6,border:'1px solid var(--line)',background:'var(--surface-2)',color:'var(--text)'}}>
+              <option value="all">Todos os eventos</option>
+              {EVENT_ORDER.map(ev=><option key={ev} value={ev}>{ev}</option>)}
+            </select>
+            <button className="btn" onClick={()=>onExport(capiEvents,'funil-crm.csv')}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Exportar CSV
+            </button>
+          </div>
+        </div>
+        {filtered.length===0?(
+          <div style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:'32px 0'}}>Nenhum lead encontrado.</div>
+        ):(
+          <div style={{overflowX:'auto'}}>
+            <table className="data-table">
+              <thead><tr>
+                <th>Contato</th>
+                <th>Funil</th>
+                <th>Último evento</th>
+                <th className="r">Eventos</th>
+                <th className="r">Dias no funil</th>
+                <th className="r">Última atividade</th>
+                <th></th>
+              </tr></thead>
+              <tbody>
+                {filtered.map(l=>(
+                  <tr key={l.phone} className="rowlink" onClick={()=>onOpenLead(l.phone)}>
+                    <td>
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        {l.temCtwa&&<span style={{fontSize:10,fontWeight:700,padding:'2px 5px',borderRadius:3,background:'rgba(200,23,42,.12)',color:'var(--red)',flexShrink:0}}>CTWA</span>}
+                        <div>
+                          <div className="row-title" style={{fontSize:12.5}}>{fmtPhone(l.phone)}</div>
+                          <div className="row-sub">{l.email??'Sem e-mail'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span className="t-muted">{PIPELINE_NAMES[l.pipeline_id??'']??'—'}</span></td>
+                    <td><span style={{fontWeight:600,fontSize:12.5,color:l.ultimoEvento==='Purchase'?'var(--gold)':'var(--text)'}}>{l.ultimoEvento}</span></td>
+                    <td className="r num">{l.totalEventos}</td>
+                    <td className="r num">{l.diasNoFunil===0?'<1d':`${l.diasNoFunil}d`}</td>
+                    <td className="r"><span className="t-muted">{fmtDateTime(l.ultimaAtividade)}</span></td>
+                    <td className="arrow-cell">›</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+// ─── Meta Ads ────────────────────────────────────────────────────────────────
+
+function MetaView({ campaignSeries, totalLeads, totalConversations, avgFreq, onDetail }: {
+  campaignSeries: CampaignSeries[]; totalLeads: number; totalConversations: number; avgFreq: number
+  onDetail: (s: CampaignSeries) => void
+}) {
+  const [subTab, setSubTab] = useState<MetaSubTab>('campanhas')
+  const SUB: {key:MetaSubTab;label:string}[] = [
+    {key:'campanhas',label:'Campanhas'},
+    {key:'saude',label:'Saúde do Anúncio'},
+    {key:'insights',label:'Insights'},
+  ]
   return (
     <>
       <div style={{display:'flex',gap:18,marginBottom:18,borderBottom:'1px solid var(--line-soft)'}}>
-        {(['wpp','ads'] as SubTab[]).map(s=>(
-          <div key={s} onClick={()=>setSubTab(s)} style={{padding:'0 2px 10px',fontSize:13,fontWeight:500,cursor:'pointer',marginBottom:-1,color:subTab===s?'var(--text)':'var(--text-3)',borderBottom:subTab===s?'1.5px solid var(--red)':'1.5px solid transparent'}}>
-            {s==='wpp'?'Campanhas de WhatsApp':'Campanhas Meta Ads'}
+        {SUB.map(s=>(
+          <div key={s.key} onClick={()=>setSubTab(s.key)} style={{padding:'0 2px 10px',fontSize:13,fontWeight:500,cursor:'pointer',marginBottom:-1,color:subTab===s.key?'var(--text)':'var(--text-3)',borderBottom:subTab===s.key?'1.5px solid var(--red)':'1.5px solid transparent'}}>
+            {s.label}
           </div>
         ))}
       </div>
-      {subTab==='wpp'?(
-        wppCampanhas.length===0?(
-          <div className="panel" style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:40}}>Nenhuma campanha de WhatsApp no período.</div>
-        ):(
-          <table className="data-table">
-            <thead><tr><th>Campanha</th><th className="r">Disparos</th><th className="r">Entregues</th><th className="r">Lidos</th><th className="r">Falhas</th><th className="r">Custo</th></tr></thead>
-            <tbody>
-              {wppCampanhas.map(c=>(
-                <tr key={c.id}>
-                  <td><div className="row-title">{c.name}</div><div className="row-sub">{c.status==='completed'?'Concluída':c.status==='running'?'Em andamento':c.status}{c.completed_at?` · ${new Date(c.completed_at).toLocaleDateString('pt-BR')}`:''}</div></td>
-                  <td className="r cell-num num">{fmtNum(c.total_envios)}</td>
-                  <td className="r num">{fmtNum(c.entregues)} <span style={{color:'var(--text-3)',fontSize:12}}>{c.total_envios>0?`${((c.entregues/c.total_envios)*100).toFixed(0)}%`:''}</span></td>
-                  <td className="r num">{fmtNum(c.lidos)} <span style={{color:'var(--text-3)',fontSize:12}}>{c.entregues>0?`${((c.lidos/c.entregues)*100).toFixed(0)}%`:''}</span></td>
-                  <td className="r num" style={{color:c.falhas>0?'var(--danger)':'var(--text-3)'}}>{c.falhas>0?fmtNum(c.falhas):'—'}</td>
-                  <td className="r num">{c.custo_total>0?fmtBRL(c.custo_total):'—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )
-      ):(
-        campaignSeries.length===0?(
-          <div className="panel" style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:40}}>Nenhuma campanha Meta Ads no período.</div>
-        ):(
+      {subTab==='campanhas'&&<CampanhaMetaView campaignSeries={campaignSeries} onDetail={onDetail}/>}
+      {subTab==='saude'&&<SaudeView campaignSeries={campaignSeries}/>}
+      {subTab==='insights'&&<InsightsView campaignSeries={campaignSeries} totalLeads={totalLeads} totalConversations={totalConversations} avgFreq={avgFreq}/>}
+    </>
+  )
+}
+
+function CampanhaMetaView({ campaignSeries, onDetail }: { campaignSeries: CampaignSeries[]; onDetail: (s: CampaignSeries) => void }) {
+  const [metric,setMetric]=useState<ChartMetric>('leads')
+  const METRICS:{key:ChartMetric;label:string}[]=[{key:'leads',label:'Leads'},{key:'spend',label:'Gasto'},{key:'cpl',label:'CPL'},{key:'reach',label:'Alcance'},{key:'frequency',label:'Frequência'}]
+  if (campaignSeries.length===0) return <div className="panel" style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:40}}>Nenhuma campanha Meta Ads no período.</div>
+  return (
+    <>
+      {campaignSeries.length>0&&campaignSeries[0].points.length>1&&(
+        <div className="panel" style={{marginBottom:14}}>
+          <div className="panel-head" style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
+            <div className="panel-title">Evolução diária <span>por campanha</span></div>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+              {METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:12,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--red)':'transparent',color:metric===m.key?'#fff':'var(--text-3)'}}>{m.label}</button>)}
+            </div>
+          </div>
+          <LineChart series={campaignSeries} metric={metric} height={200}/>
+        </div>
+      )}
+      <div className="panel">
+        <div className="panel-head"><div className="panel-title">Campanhas <span>clique para detalhar</span></div></div>
+        <div style={{overflowX:'auto'}}>
           <table className="data-table">
             <thead><tr><th>Campanha</th><th className="r">Leads</th><th className="r">Alcance</th><th className="r">Freq.</th><th className="r">Conversas</th><th className="r">CTR</th><th className="r">CPL</th><th className="r">Gasto</th><th></th></tr></thead>
             <tbody>
@@ -602,40 +822,55 @@ function CampanhaView({campaignSeries,wppCampanhas,subTab,setSubTab,onDetail}:{
               })}
             </tbody>
           </table>
-        )
-      )}
+        </div>
+      </div>
     </>
   )
 }
 
-// ─── Por Funil ────────────────────────────────────────────────────────────────
+// ─── WhatsApp ────────────────────────────────────────────────────────────────
 
-function FunilView({campaignSeries,onDetail}:{campaignSeries:CampaignSeries[];onDetail:(s:CampaignSeries)=>void}) {
-  const funis=FUNIL_MAP.map(f=>{
-    const matching=campaignSeries.filter(s=>f.kws.some(kw=>s.campaign_name.toUpperCase().includes(kw.toUpperCase())))
-    const leads=matching.reduce((s,c)=>s+c.total_leads,0); const spend=matching.reduce((s,c)=>s+c.total_spend,0)
-    const impressions=matching.reduce((s,c)=>s+c.total_impressions,0); const cpl=leads>0?spend/leads:0
-    return {...f,leads,spend,impressions,cpl,matching}
-  })
+function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
+  if (wppCampanhas.length===0) return <div className="panel" style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:40}}>Nenhuma campanha de WhatsApp no período.</div>
+  const totalEnvios=wppCampanhas.reduce((s,c)=>s+c.total_envios,0)
+  const totalEntregues=wppCampanhas.reduce((s,c)=>s+c.entregues,0)
+  const totalLidos=wppCampanhas.reduce((s,c)=>s+c.lidos,0)
+  const totalCusto=wppCampanhas.reduce((s,c)=>s+c.custo_total,0)
   return (
-    <table className="data-table">
-      <thead><tr><th>Funil (RD CRM)</th><th className="r">Leads</th><th className="r">Alcance</th><th className="r">Impressões</th><th className="r">Gasto</th><th className="r">CPL</th><th className="r">Receita</th><th></th></tr></thead>
-      <tbody>
-        {funis.map(f=>(
-          <tr key={f.name} className={f.leads>0?'rowlink':''} onClick={()=>f.matching.length>0&&onDetail(f.matching[0])}>
-            <td style={{color:f.leads===0?'var(--text-3)':'var(--text)'}}><div className="row-title" style={{color:'inherit'}}>{f.name}</div><div className="row-sub">Pixel {f.pixel}</div></td>
-            <td className="r num" style={{color:f.leads===0?'var(--text-3)':undefined}}>{f.leads>0?fmtNum(f.leads):'—'}</td>
-            <td className="r num" style={{color:f.leads===0?'var(--text-3)':undefined}}>{f.matching.length>0?fmtNum(f.matching.reduce((s,c)=>s+c.total_reach,0)):'—'}</td>
-            <td className="r num" style={{color:f.impressions===0?'var(--text-3)':undefined}}>{f.impressions>0?fmtNum(f.impressions):'—'}</td>
-            <td className="r num" style={{color:f.spend===0?'var(--text-3)':undefined}}>{f.spend>0?fmtBRL(f.spend):'—'}</td>
-            <td className="r num" style={{color:f.cpl===0?'var(--text-3)':undefined}}>{f.cpl>0?fmtBRL(f.cpl):'—'}</td>
-            <td className="r cell-gold num"><span style={{color:'var(--text-3)'}}>—</span></td>
-            <td className="arrow-cell">{f.leads>0?'›':''}</td>
-          </tr>
+    <>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:16}}>
+        {[
+          {label:'Disparos totais',value:fmtNum(totalEnvios),sub:`${wppCampanhas.length} campanhas`},
+          {label:'Entregues',value:fmtNum(totalEntregues),sub:totalEnvios>0?`${((totalEntregues/totalEnvios)*100).toFixed(1).replace('.',',')}%`:'—'},
+          {label:'Taxa de leitura',value:totalEntregues>0?`${((totalLidos/totalEntregues)*100).toFixed(1).replace('.',',')}%`:'—',sub:`${fmtNum(totalLidos)} lidas`},
+          {label:'Custo WPP',value:fmtBRL(totalCusto),sub:totalEnvios>0?`${fmtBRL(totalCusto/totalEnvios)}/disparo`:'—'},
+        ].map(k=>(
+          <div key={k.label} className="kpi-card">
+            <div className="kpi-label"><span className="base-mark"/> {k.label}</div>
+            <div className="kpi-value num">{k.value}</div>
+            <div className="kpi-sub">{k.sub}</div>
+          </div>
         ))}
-        <tr><td colSpan={8} style={{color:'var(--text-3)'}}><div className="row-title" style={{color:'var(--text-3)'}}>Europa · China · C$ Club</div><div className="row-sub">Aguardando compartilhamento dos pixels</div></td></tr>
-      </tbody>
-    </table>
+      </div>
+      <div className="panel">
+        <div className="panel-head"><div className="panel-title">Campanhas WhatsApp</div></div>
+        <table className="data-table">
+          <thead><tr><th>Campanha</th><th className="r">Disparos</th><th className="r">Entregues</th><th className="r">Lidos</th><th className="r">Falhas</th><th className="r">Custo</th></tr></thead>
+          <tbody>
+            {wppCampanhas.map(c=>(
+              <tr key={c.id}>
+                <td><div className="row-title">{c.name}</div><div className="row-sub">{c.status==='completed'?'Concluída':c.status==='running'?'Em andamento':c.status}{c.completed_at?` · ${new Date(c.completed_at).toLocaleDateString('pt-BR')}`:''}</div></td>
+                <td className="r cell-num num">{fmtNum(c.total_envios)}</td>
+                <td className="r num">{fmtNum(c.entregues)} <span style={{color:'var(--text-3)',fontSize:12}}>{c.total_envios>0?`${((c.entregues/c.total_envios)*100).toFixed(0)}%`:''}</span></td>
+                <td className="r num">{fmtNum(c.lidos)} <span style={{color:'var(--text-3)',fontSize:12}}>{c.entregues>0?`${((c.lidos/c.entregues)*100).toFixed(0)}%`:''}</span></td>
+                <td className="r num" style={{color:c.falhas>0?'var(--danger)':'var(--text-3)'}}>{c.falhas>0?fmtNum(c.falhas):'—'}</td>
+                <td className="r num">{c.custo_total>0?fmtBRL(c.custo_total):'—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -719,7 +954,6 @@ function InsightsView({campaignSeries,totalLeads,totalConversations,avgFreq}:{
 
   if (avgFreq<1.5&&campaignSeries.length>0) insights.push({type:'info',title:'Frequência baixa — público ainda tem espaço para crescer',body:`Frequência média de ${avgFreq.toFixed(1)}× indica que o público ainda não viu os anúncios o suficiente. Há margem para aumentar o orçamento ou ampliar o alcance sem risco de saturação.`})
 
-  // CPL por campanha — identificar a mais eficiente
   if (campaignSeries.length>=2) {
     const comCpl=campaignSeries.filter(s=>s.avg_cpl>0)
     if (comCpl.length>=2) {
@@ -730,14 +964,12 @@ function InsightsView({campaignSeries,totalLeads,totalConversations,avgFreq}:{
     }
   }
 
-  // Dias sem nenhum lead — identifica campanhas com buracos
   for (const s of campaignSeries) {
     const diasSemLead=s.points.filter(p=>p.leads===0).length
     const pct=s.points.length>0?(diasSemLead/s.points.length)*100:0
-    if (pct>=20&&s.points.length>=5) insights.push({type:'warn',title:`${diasSemLead} de ${s.points.length} dias sem lead — ${s.campaign_name.split(']')[0].replace('[','').trim()}`,body:`${pct.toFixed(0)}% dos dias no período não gerou nenhum lead. Isso pode indicar pausas na veiculação, orçamento diário esgotando cedo, ou períodos de baixa entrega pela Meta. Vale revisar o calendário de veiculação.`})
+    if (pct>=20&&s.points.length>=5) insights.push({type:'warn',title:`${diasSemLead} de ${s.points.length} dias sem lead — ${s.campaign_name.split(']')[0].replace('[','').trim()}`,body:`${pct.toFixed(0)}% dos dias no período não gerou nenhum lead. Isso pode indicar pausas na veiculação, orçamento diário esgotando cedo, ou períodos de baixa entrega pela Meta.`})
   }
 
-  // Gasto total com CPL — sempre mostra o CPL atual como referência
   for (const s of campaignSeries) {
     if (s.total_spend>50&&s.avg_cpl>0) {
       const ref = s.avg_cpl>80?'alto para campanhas de WhatsApp — testar novos criativos pode reduzir o custo':s.avg_cpl>40?'moderado — há espaço para otimização de criativo e segmentação':'dentro do esperado para campanhas de remarketing via WhatsApp'
@@ -768,7 +1000,7 @@ function InsightsView({campaignSeries,totalLeads,totalConversations,avgFreq}:{
   )
 }
 
-// ─── Detalhe ──────────────────────────────────────────────────────────────────
+// ─── Detalhe Campanha ─────────────────────────────────────────────────────────
 
 function DetailView({series,onBack}:{series:CampaignSeries;onBack:()=>void}) {
   const [metric,setMetric]=useState<ChartMetric>('leads')
