@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { supabaseWpp } from '../../lib/supabase'
 import Icon, { IconBadge } from '../../components/Icon'
 
@@ -18,6 +18,11 @@ interface WppCampanha {
   id: string; name: string; status: string
   started_at: string | null; completed_at: string | null; created_at: string
   total_envios: number; entregues: number; lidos: number; respondidos: number; falhas: number; custo_total: number
+}
+
+interface WppVariante {
+  id: string; campaign_id: string; label: string; body: string
+  total_envios: number; entregues: number; lidos: number; respondidos: number; falhas: number
 }
 
 interface DealStageRow {
@@ -212,6 +217,37 @@ async function fetchWppCampanhas(from: string, to: string): Promise<WppCampanha[
       respondidos:es.filter((e:any)=>e.status==='replied').length,
       falhas:es.filter((e:any)=>e.status==='failed').length,
       custo_total:es.reduce((s:number,e:any)=>s+(e.cost?Number(e.cost):0),0) }
+  })
+}
+
+async function fetchWppVariantes(campanhaIds: string[]): Promise<WppVariante[]> {
+  if (campanhaIds.length === 0) return []
+  const { data: variantes, error: err1 } = await supabaseWpp
+    .from('campaign_variants')
+    .select('id,campaign_id,label,body')
+    .in('campaign_id', campanhaIds)
+  if (err1 || !variantes || variantes.length === 0) return []
+  const varIds = variantes.map((v: any) => v.id)
+  const { data: envios, error: err2 } = await supabaseWpp
+    .from('campaign_sends')
+    .select('variant_id,status')
+    .in('variant_id', varIds)
+  if (err2) return []
+  const ep: Record<string, any[]> = {}
+  for (const e of (envios ?? []) as any[]) {
+    if (!ep[e.variant_id]) ep[e.variant_id] = []
+    ep[e.variant_id].push(e)
+  }
+  return (variantes as any[]).map((v: any) => {
+    const es = ep[v.id] ?? []
+    return {
+      id: v.id, campaign_id: v.campaign_id, label: v.label, body: v.body,
+      total_envios: es.length,
+      entregues: es.filter((e: any) => ['delivered','read','replied'].includes(e.status)).length,
+      lidos: es.filter((e: any) => ['read','replied'].includes(e.status)).length,
+      respondidos: es.filter((e: any) => e.status === 'replied').length,
+      falhas: es.filter((e: any) => e.status === 'failed').length,
+    }
   })
 }
 
@@ -833,6 +869,60 @@ function CampanhaMetaView({ campaignSeries, onDetail }: { campaignSeries: Campai
 
 // ─── WhatsApp ────────────────────────────────────────────────────────────────
 
+function WppEngajamentoChart({ campanha, variante }: { campanha: WppCampanha | null; variante: WppVariante | null }) {
+  const src = variante ?? campanha
+  if (!src) return null
+  const total = src.total_envios
+  const entregues = src.entregues
+  const lidos = src.lidos
+  const respondidos = src.respondidos
+  const naoEntregues = total - entregues - (src.falhas)
+  const pendentes = Math.max(0, naoEntregues)
+
+  const bars = [
+    { label: 'Respondeu', count: respondidos, color: '#2E7D52', pct: total > 0 ? (respondidos / total) * 100 : 0 },
+    { label: 'Leu', count: lidos - respondidos, color: '#C8172A', pct: total > 0 ? ((lidos - respondidos) / total) * 100 : 0 },
+    { label: 'Recebeu', count: entregues - lidos, color: '#5B6EE8', pct: total > 0 ? ((entregues - lidos) / total) * 100 : 0 },
+    { label: 'Não recebeu', count: src.falhas + pendentes, color: 'var(--line)', pct: total > 0 ? ((src.falhas + pendentes) / total) * 100 : 0 },
+  ]
+
+  const maxPct = Math.max(...bars.map(b => b.pct), 1)
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, height: 180, padding: '0 8px' }}>
+      {bars.map(b => (
+        <div key={b.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
+          <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, color: b.count === 0 ? 'var(--text-3)' : 'var(--text)' }}>
+            {b.pct > 0 ? `${b.pct.toFixed(1).replace('.', ',')}%` : '—'}
+          </div>
+          <div style={{ width: '100%', display: 'flex', alignItems: 'flex-end', height: 120 }}>
+            <div style={{
+              width: '100%',
+              height: `${Math.max((b.pct / maxPct) * 100, b.count > 0 ? 4 : 0)}%`,
+              minHeight: b.count > 0 ? 4 : 0,
+              background: b.color,
+              borderRadius: '4px 4px 0 0',
+              transition: 'height .5s ease',
+              opacity: b.count === 0 ? 0.2 : 1,
+              position: 'relative',
+            }}>
+              {b.pct > 8 && (
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: '#fff', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                  {fmtNum(b.count)}
+                </div>
+              )}
+            </div>
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', textAlign: 'center', lineHeight: 1.3 }}>{b.label}</div>
+          {b.pct <= 8 && b.count > 0 && (
+            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{fmtNum(b.count)}</div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function WppFunilBar({ label, count, base, color, sub }: { label: string; count: number; base: number; color: string; sub?: string }) {
   const pct = base > 0 ? Math.min((count / base) * 100, 100) : 0
   const pctLabel = base > 0 ? `${((count / base) * 100).toFixed(1).replace('.', ',')}%` : '—'
@@ -853,8 +943,145 @@ function WppFunilBar({ label, count, base, color, sub }: { label: string; count:
   )
 }
 
+function WppDetalheCampanha({ campanha, onBack }: { campanha: WppCampanha; onBack: () => void }) {
+  const [variantes, setVariantes] = useState<WppVariante[]>([])
+  const [varianteAtiva, setVarianteAtiva] = useState<string>('geral')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchWppVariantes([campanha.id]).then(vs => {
+      setVariantes(vs)
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [campanha.id])
+
+  const temAB = variantes.length >= 2
+  const varianteObj = varianteAtiva === 'geral' ? null : variantes.find(v => v.id === varianteAtiva) ?? null
+
+  const src = varianteObj ?? campanha
+  const taxaEntrega = src.total_envios > 0 ? ((src.entregues / src.total_envios) * 100).toFixed(1).replace('.', ',') : '—'
+  const taxaLeitura = src.entregues > 0 ? ((src.lidos / src.entregues) * 100).toFixed(1).replace('.', ',') : '—'
+  const taxaResposta = src.lidos > 0 ? ((src.respondidos / src.lidos) * 100).toFixed(1).replace('.', ',') : '—'
+
+  // classificação de engajamento
+  const respondidos = src.respondidos
+  const leuSemResponder = src.lidos - src.respondidos
+  const recebeuSemLer = src.entregues - src.lidos
+  const naoRecebeu = src.total_envios - src.entregues
+
+  return (
+    <div>
+      {/* Header */}
+      <div onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-2)', cursor: 'pointer', marginBottom: 20, fontWeight: 500 }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-2)')}>
+        <Icon name="arrow-left" /> Voltar
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 'clamp(18px,3vw,26px)', marginBottom: 4 }}>{campanha.name}</h2>
+        <div style={{ color: 'var(--text-3)', fontSize: 12.5 }}>
+          {campanha.status === 'completed' ? 'Concluída' : campanha.status === 'running' ? 'Em andamento' : campanha.status}
+          {campanha.completed_at ? ` · ${new Date(campanha.completed_at).toLocaleDateString('pt-BR')}` : ''}
+          {campanha.started_at ? ` · Iniciada ${new Date(campanha.started_at).toLocaleDateString('pt-BR')}` : ''}
+        </div>
+      </div>
+
+      {/* Toggle A/B — só aparece quando tem variantes */}
+      {!loading && temAB && (
+        <div style={{ display: 'flex', gap: 0, marginBottom: 20, background: 'var(--surface-2)', borderRadius: 8, padding: 4, width: 'fit-content', border: '1px solid var(--line)' }}>
+          <button
+            onClick={() => setVarianteAtiva('geral')}
+            style={{ padding: '6px 16px', fontSize: 12.5, fontWeight: 600, borderRadius: 6, border: 'none', cursor: 'pointer', background: varianteAtiva === 'geral' ? 'var(--surface)' : 'transparent', color: varianteAtiva === 'geral' ? 'var(--text)' : 'var(--text-3)', boxShadow: varianteAtiva === 'geral' ? '0 1px 4px rgba(0,0,0,.15)' : 'none' }}>
+            Geral
+          </button>
+          {variantes.map(v => (
+            <button
+              key={v.id}
+              onClick={() => setVarianteAtiva(v.id)}
+              style={{ padding: '6px 16px', fontSize: 12.5, fontWeight: 600, borderRadius: 6, border: 'none', cursor: 'pointer', background: varianteAtiva === v.id ? 'var(--surface)' : 'transparent', color: varianteAtiva === v.id ? 'var(--text)' : 'var(--text-3)', boxShadow: varianteAtiva === v.id ? '0 1px 4px rgba(0,0,0,.15)' : 'none' }}>
+              Versão {v.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 12, marginBottom: 16 }}>
+        {[
+          { label: 'Enviados', value: fmtNum(src.total_envios), sub: '100%' },
+          { label: 'Entregues', value: fmtNum(src.entregues), sub: `${taxaEntrega}% dos enviados` },
+          { label: 'Lidos', value: fmtNum(src.lidos), sub: `${taxaLeitura}% dos entregues` },
+          { label: 'Respondidos', value: fmtNum(src.respondidos), sub: `${taxaResposta}% dos lidos`, green: src.respondidos > 0 },
+          { label: 'Falhas', value: src.falhas > 0 ? fmtNum(src.falhas) : '—', sub: src.total_envios > 0 ? `${((src.falhas / src.total_envios) * 100).toFixed(1).replace('.', ',')}%` : '—', danger: src.falhas > 0 },
+          { label: 'Custo', value: campanha.custo_total > 0 ? fmtBRL(campanha.custo_total) : '—', sub: campanha.total_envios > 0 && campanha.custo_total > 0 ? `${fmtBRL(campanha.custo_total / campanha.total_envios)}/disparo` : '—' },
+        ].map(k => (
+          <div key={k.label} className="kpi-card">
+            <div className="kpi-label"><span className="base-mark" /> {k.label}</div>
+            <div className="kpi-value num" style={(k as any).green ? { color: 'var(--green)' } : (k as any).danger ? { color: 'var(--danger)' } : {}}>{k.value}</div>
+            <div className="kpi-sub">{k.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Gráfico de engajamento */}
+      <div className="panel" style={{ marginBottom: 14 }}>
+        <div className="panel-head" style={{ marginBottom: 16 }}>
+          <div className="panel-title">Engajamento <span>{varianteAtiva === 'geral' ? 'visão geral' : `Versão ${variantes.find(v => v.id === varianteAtiva)?.label}`}</span></div>
+        </div>
+        <WppEngajamentoChart campanha={campanha} variante={varianteObj} />
+
+        {/* Legenda / tabela de engajamento */}
+        <div style={{ marginTop: 24, borderTop: '1px solid var(--line-soft)', paddingTop: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px 16px', fontSize: 12.5 }}>
+            <div style={{ color: 'var(--text-3)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Engajamento</div>
+            <div style={{ color: 'var(--text-3)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Porcentagem</div>
+            <div style={{ color: 'var(--text-3)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Total</div>
+
+            {[
+              { label: 'Responderam', count: respondidos, color: '#2E7D52' },
+              { label: 'Leram (sem responder)', count: leuSemResponder, color: '#C8172A' },
+              { label: 'Receberam (sem ler)', count: recebeuSemLer, color: '#5B6EE8' },
+              { label: 'Não receberam', count: naoRecebeu, color: 'var(--text-3)' },
+            ].map(row => (
+              <React.Fragment key={row.label}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 2, background: row.color, flexShrink: 0 }} />
+                  <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>{row.label}</span>
+                </div>
+                <div style={{ textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, color: 'var(--text-2)' }}>
+                  {src.total_envios > 0 ? `${((row.count / src.total_envios) * 100).toFixed(2).replace('.', ',')}%` : '—'}
+                </div>
+                <div style={{ textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: row.count === 0 ? 'var(--text-3)' : 'var(--text)' }}>
+                  {fmtNum(row.count)}
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Funil de entrega */}
+      <div className="panel">
+        <div className="panel-head"><div className="panel-title">Funil de entrega</div></div>
+        <div style={{ padding: '4px 0' }}>
+          <WppFunilBar label="Enviados" count={src.total_envios} base={src.total_envios} color="var(--text-3)" sub="Total disparado" />
+          <WppFunilBar label="Entregues" count={src.entregues} base={src.total_envios} color="#5B6EE8" sub="Chegou ao celular" />
+          <WppFunilBar label="Lidos" count={src.lidos} base={src.entregues} color="var(--red)" sub="Dois tiques azuis" />
+          <WppFunilBar label="Respondidos" count={src.respondidos} base={src.lidos} color="var(--green)" sub="Enviou mensagem" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
+  const [detalheCampanha, setDetalheCampanha] = useState<WppCampanha | null>(null)
   const [selectedCampanha, setSelectedCampanha] = useState<WppCampanha | null>(null)
+
+  if (detalheCampanha) {
+    return <WppDetalheCampanha campanha={detalheCampanha} onBack={() => setDetalheCampanha(null)} />
+  }
 
   if (wppCampanhas.length === 0) return (
     <div className="panel" style={{ fontSize: 13, color: 'var(--text-3)', textAlign: 'center', padding: 40 }}>
@@ -907,7 +1134,7 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
         </div>
         <div style={{ padding: '4px 0' }}>
           <WppFunilBar label="Enviados" count={campanha ? campanha.total_envios : totalEnvios} base={campanha ? campanha.total_envios : totalEnvios} color="var(--text-3)" sub="Total disparado" />
-          <WppFunilBar label="Entregues" count={campanha ? campanha.entregues : totalEntregues} base={campanha ? campanha.total_envios : totalEnvios} color="var(--blue, #5B6EE8)" sub="Chegou ao celular" />
+          <WppFunilBar label="Entregues" count={campanha ? campanha.entregues : totalEntregues} base={campanha ? campanha.total_envios : totalEnvios} color="#5B6EE8" sub="Chegou ao celular" />
           <WppFunilBar label="Lidos" count={campanha ? campanha.lidos : totalLidos} base={campanha ? campanha.entregues : totalEntregues} color="var(--red)" sub="Dois tiques azuis" />
           <WppFunilBar label="Respondidos" count={campanha ? campanha.respondidos : totalRespondidos} base={campanha ? campanha.lidos : totalLidos} color="var(--green)" sub="Enviou mensagem" />
         </div>
@@ -915,7 +1142,7 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
 
       {/* Tabela de campanhas */}
       <div className="panel">
-        <div className="panel-head"><div className="panel-title">Campanhas WhatsApp <span>clique para filtrar o funil</span></div></div>
+        <div className="panel-head"><div className="panel-title">Campanhas WhatsApp <span>clique para ver detalhes</span></div></div>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
@@ -927,6 +1154,7 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
                 <th className="r">Respondidos</th>
                 <th className="r">Falhas</th>
                 <th className="r">Custo</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -936,7 +1164,7 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
                   <tr
                     key={c.id}
                     className="rowlink"
-                    onClick={() => setSelectedCampanha(isSelected ? null : c)}
+                    onClick={() => setDetalheCampanha(c)}
                     style={isSelected ? { background: 'var(--active)' } : {}}
                   >
                     <td>
@@ -969,6 +1197,7 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
                       {c.falhas > 0 ? fmtNum(c.falhas) : '—'}
                     </td>
                     <td className="r num">{c.custo_total > 0 ? fmtBRL(c.custo_total) : '—'}</td>
+                    <td className="arrow-cell">›</td>
                   </tr>
                 )
               })}
