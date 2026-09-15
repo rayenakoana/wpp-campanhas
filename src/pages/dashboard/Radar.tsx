@@ -886,59 +886,64 @@ function WppEngajamentoChart({ campanha, variante }: { campanha: WppCampanha | n
   const respondidos = src.respondidos
   const pendentes = Math.max(0, total - entregues - src.falhas)
 
-  const bars = [
-    { label: 'Respondeu',   count: respondidos,            pct: total > 0 ? (respondidos / total) * 100 : 0,                  c: ENGAJ_COLORS.respondeu },
-    { label: 'Leu',         count: lidos - respondidos,    pct: total > 0 ? ((lidos - respondidos) / total) * 100 : 0,        c: ENGAJ_COLORS.leu },
-    { label: 'Recebeu',     count: entregues - lidos,      pct: total > 0 ? ((entregues - lidos) / total) * 100 : 0,          c: ENGAJ_COLORS.recebeu },
-    { label: 'Não recebeu', count: src.falhas + pendentes, pct: total > 0 ? ((src.falhas + pendentes) / total) * 100 : 0,    c: ENGAJ_COLORS.naoRecebeu },
+  const segments = [
+    { label: 'Respondeu',   count: respondidos,            pct: total > 0 ? (respondidos / total) * 100 : 0,                c: ENGAJ_COLORS.respondeu },
+    { label: 'Leu',         count: lidos - respondidos,    pct: total > 0 ? ((lidos - respondidos) / total) * 100 : 0,      c: ENGAJ_COLORS.leu },
+    { label: 'Recebeu',     count: entregues - lidos,      pct: total > 0 ? ((entregues - lidos) / total) * 100 : 0,        c: ENGAJ_COLORS.recebeu },
+    { label: 'Não recebeu', count: src.falhas + pendentes, pct: total > 0 ? ((src.falhas + pendentes) / total) * 100 : 0,  c: ENGAJ_COLORS.naoRecebeu },
   ]
 
-  const maxPct = Math.max(...bars.map(b => b.pct), 1)
-  const BAR_MAX_H = 100
-  const BAR_W = 56
+  const hasData = total > 0
 
   return (
     <div style={{ width: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, alignItems: 'flex-end' }}>
-        {bars.map(b => {
-          const barH = b.count > 0 ? Math.max((b.pct / maxPct) * BAR_MAX_H, 6) : 0
-          const isEmpty = b.count === 0
+
+      {/* Barra empilhada */}
+      <div style={{ width: '100%', height: 28, borderRadius: 8, overflow: 'hidden', display: 'flex', background: 'var(--line-soft)' }}>
+        {hasData && segments.filter(s => s.count > 0).map((s, i, arr) => (
+          <div
+            key={s.label}
+            title={`${s.label}: ${s.pct.toFixed(1)}%`}
+            style={{
+              width: `${s.pct}%`,
+              background: s.c.bar,
+              borderRadius: i === 0 ? '8px 0 0 8px' : i === arr.length - 1 ? '0 8px 8px 0' : 0,
+              transition: 'width .6s ease',
+              position: 'relative',
+              minWidth: s.count > 0 ? 3 : 0,
+            }}
+          />
+        ))}
+        {!hasData && <div style={{ flex: 1, background: 'var(--line)' }} />}
+      </div>
+
+      {/* Legenda — linha por categoria */}
+      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {segments.map(s => {
+          const isEmpty = s.count === 0
           return (
-            <div key={b.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: BAR_W }}>
-              {/* % — destaque principal */}
-              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 22,
-                color: isEmpty ? 'var(--text-3)' : b.c.bar,
-                marginBottom: 4, lineHeight: 1, minHeight: 26, display: 'flex', alignItems: 'flex-end',
-                opacity: isEmpty ? 0.4 : 1 }}>
-                {b.pct > 0 ? `${b.pct.toFixed(1).replace('.', ',')}%` : '—'}
+            <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: isEmpty ? 0.35 : 1 }}>
+              {/* dot colorido */}
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: s.c.bar, flexShrink: 0 }} />
+
+              {/* mini barra proporcional */}
+              <div style={{ flex: 1, height: 4, background: 'var(--line-soft)', borderRadius: 2, overflow: 'hidden', maxWidth: 200 }}>
+                <div style={{ height: '100%', width: `${s.pct}%`, background: s.c.bar, borderRadius: 2, transition: 'width .6s ease' }} />
               </div>
-              {/* contagem */}
-              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 13,
-                color: isEmpty ? 'var(--text-3)' : 'var(--text-2)',
-                marginBottom: 8, minHeight: 16, lineHeight: 1, opacity: isEmpty ? 0.35 : 1 }}>
-                {b.count > 0 ? fmtNum(b.count) : '—'}
-              </div>
-              {/* barra com trilha de fundo */}
-              <div style={{ width: BAR_W, position: 'relative', height: BAR_MAX_H, display: 'flex', alignItems: 'flex-end' }}>
-                <div style={{ position: 'absolute', inset: 0,
-                  background: isEmpty ? 'transparent' : b.c.bg,
-                  borderRadius: 6,
-                  border: isEmpty ? '1px dashed var(--line)' : 'none' }} />
-                {!isEmpty && (
-                  <div style={{ width: '100%', height: barH,
-                    background: b.c.bar, borderRadius: 6,
-                    transition: 'height .5s ease', position: 'relative', zIndex: 1 }} />
-                )}
-              </div>
-              {/* separador */}
-              <div style={{ width: BAR_W, height: 2, background: isEmpty ? 'var(--line-soft)' : b.c.bar,
-                borderRadius: 1, marginTop: 1, opacity: isEmpty ? 0.25 : 0.55 }} />
+
               {/* label */}
-              <div style={{ marginTop: 10, fontSize: 10, fontWeight: 600,
-                textTransform: 'uppercase', letterSpacing: '0.07em',
-                color: isEmpty ? 'var(--text-3)' : b.c.text,
-                textAlign: 'center', lineHeight: 1.3, opacity: isEmpty ? 0.45 : 1 }}>
-                {b.label}
+              <div style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 500, width: 140, flexShrink: 0 }}>{s.label}</div>
+
+              {/* % */}
+              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15,
+                color: isEmpty ? 'var(--text-3)' : s.c.bar, width: 52, textAlign: 'right', flexShrink: 0 }}>
+                {s.pct > 0 ? `${s.pct.toFixed(1).replace('.', ',')}%` : '—'}
+              </div>
+
+              {/* contagem */}
+              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 15,
+                color: isEmpty ? 'var(--text-3)' : 'var(--text)', width: 36, textAlign: 'right', flexShrink: 0 }}>
+                {s.count > 0 ? fmtNum(s.count) : '—'}
               </div>
             </div>
           )
@@ -1196,34 +1201,6 @@ function WppDetalheCampanha({ campanha, onBack }: { campanha: WppCampanha; onBac
         </div>
         <WppEngajamentoChart campanha={campanha} variante={varianteObj} />
 
-        {/* Legenda / tabela de engajamento */}
-        <div style={{ marginTop: 24, borderTop: '1px solid var(--line-soft)', paddingTop: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px 16px', fontSize: 12.5 }}>
-            <div style={{ color: 'var(--text-3)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Engajamento</div>
-            <div style={{ color: 'var(--text-3)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Porcentagem</div>
-            <div style={{ color: 'var(--text-3)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Total</div>
-
-            {[
-              { label: 'Responderam',          count: respondidos,      color: '#34A853' },
-              { label: 'Leram (sem responder)', count: leuSemResponder, color: '#FBBC04' },
-              { label: 'Receberam (sem ler)',   count: recebeuSemLer,   color: '#4285F4' },
-              { label: 'Não receberam',         count: naoRecebeu,      color: '#BDC1C6' },
-            ].map(row => (
-              <React.Fragment key={row.label}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 2, background: row.color, flexShrink: 0 }} />
-                  <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>{row.label}</span>
-                </div>
-                <div style={{ textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, color: 'var(--text-2)' }}>
-                  {src.total_envios > 0 ? `${((row.count / src.total_envios) * 100).toFixed(2).replace('.', ',')}%` : '—'}
-                </div>
-                <div style={{ textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: row.count === 0 ? 'var(--text-3)' : 'var(--text)' }}>
-                  {fmtNum(row.count)}
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Funil de entrega — Sankey */}
