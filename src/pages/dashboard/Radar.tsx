@@ -1196,7 +1196,7 @@ function WppDetalheCampanha({ campanha, onBack }: { campanha: WppCampanha; onBac
 
 function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
   const [detalheCampanha, setDetalheCampanha] = useState<WppCampanha | null>(null)
-  const [selectedCampanha, setSelectedCampanha] = useState<WppCampanha | null>(null)
+  const [selectedCampanha] = useState<WppCampanha | null>(null)
 
   if (detalheCampanha) {
     return <WppDetalheCampanha campanha={detalheCampanha} onBack={() => setDetalheCampanha(null)} />
