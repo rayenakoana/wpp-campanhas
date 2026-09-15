@@ -887,37 +887,63 @@ function WppEngajamentoChart({ campanha, variante }: { campanha: WppCampanha | n
   const pendentes = Math.max(0, total - entregues - src.falhas)
 
   const bars = [
-    { label: 'Respondeu',   count: respondidos,             pct: total > 0 ? (respondidos / total) * 100 : 0,                      c: ENGAJ_COLORS.respondeu },
-    { label: 'Leu',         count: lidos - respondidos,     pct: total > 0 ? ((lidos - respondidos) / total) * 100 : 0,            c: ENGAJ_COLORS.leu },
-    { label: 'Recebeu',     count: entregues - lidos,       pct: total > 0 ? ((entregues - lidos) / total) * 100 : 0,              c: ENGAJ_COLORS.recebeu },
-    { label: 'Não recebeu', count: src.falhas + pendentes,  pct: total > 0 ? ((src.falhas + pendentes) / total) * 100 : 0,        c: ENGAJ_COLORS.naoRecebeu },
+    { label: 'Respondeu',   count: respondidos,            pct: total > 0 ? (respondidos / total) * 100 : 0,                  c: ENGAJ_COLORS.respondeu },
+    { label: 'Leu',         count: lidos - respondidos,    pct: total > 0 ? ((lidos - respondidos) / total) * 100 : 0,        c: ENGAJ_COLORS.leu },
+    { label: 'Recebeu',     count: entregues - lidos,      pct: total > 0 ? ((entregues - lidos) / total) * 100 : 0,          c: ENGAJ_COLORS.recebeu },
+    { label: 'Não recebeu', count: src.falhas + pendentes, pct: total > 0 ? ((src.falhas + pendentes) / total) * 100 : 0,    c: ENGAJ_COLORS.naoRecebeu },
   ]
 
   const maxPct = Math.max(...bars.map(b => b.pct), 1)
-  const BAR_HEIGHT = 140
+  const BAR_MAX_H = 100
+  const BAR_W = 56
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, height: BAR_HEIGHT + 64, padding: '0 4px' }}>
-      {bars.map(b => {
-        const barH = Math.max((b.pct / maxPct) * BAR_HEIGHT, b.count > 0 ? 6 : 0)
-        return (
-          <div key={b.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, justifyContent: 'flex-end' }}>
-            {/* % label acima da barra */}
-            <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: b.count === 0 ? 'var(--text-3)' : b.c.bar, marginBottom: 8, minHeight: 22, display: 'flex', alignItems: 'flex-end' }}>
-              {b.pct > 0 ? `${b.pct.toFixed(1).replace('.', ',')}%` : '—'}
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, alignItems: 'flex-end' }}>
+        {bars.map(b => {
+          const barH = b.count > 0 ? Math.max((b.pct / maxPct) * BAR_MAX_H, 6) : 0
+          const isEmpty = b.count === 0
+          return (
+            <div key={b.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: BAR_W }}>
+              {/* % — destaque principal */}
+              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 22,
+                color: isEmpty ? 'var(--text-3)' : b.c.bar,
+                marginBottom: 4, lineHeight: 1, minHeight: 26, display: 'flex', alignItems: 'flex-end',
+                opacity: isEmpty ? 0.4 : 1 }}>
+                {b.pct > 0 ? `${b.pct.toFixed(1).replace('.', ',')}%` : '—'}
+              </div>
+              {/* contagem */}
+              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 13,
+                color: isEmpty ? 'var(--text-3)' : 'var(--text-2)',
+                marginBottom: 8, minHeight: 16, lineHeight: 1, opacity: isEmpty ? 0.35 : 1 }}>
+                {b.count > 0 ? fmtNum(b.count) : '—'}
+              </div>
+              {/* barra com trilha de fundo */}
+              <div style={{ width: BAR_W, position: 'relative', height: BAR_MAX_H, display: 'flex', alignItems: 'flex-end' }}>
+                <div style={{ position: 'absolute', inset: 0,
+                  background: isEmpty ? 'transparent' : b.c.bg,
+                  borderRadius: 6,
+                  border: isEmpty ? '1px dashed var(--line)' : 'none' }} />
+                {!isEmpty && (
+                  <div style={{ width: '100%', height: barH,
+                    background: b.c.bar, borderRadius: 6,
+                    transition: 'height .5s ease', position: 'relative', zIndex: 1 }} />
+                )}
+              </div>
+              {/* separador */}
+              <div style={{ width: BAR_W, height: 2, background: isEmpty ? 'var(--line-soft)' : b.c.bar,
+                borderRadius: 1, marginTop: 1, opacity: isEmpty ? 0.25 : 0.55 }} />
+              {/* label */}
+              <div style={{ marginTop: 10, fontSize: 10, fontWeight: 600,
+                textTransform: 'uppercase', letterSpacing: '0.07em',
+                color: isEmpty ? 'var(--text-3)' : b.c.text,
+                textAlign: 'center', lineHeight: 1.3, opacity: isEmpty ? 0.45 : 1 }}>
+                {b.label}
+              </div>
             </div>
-            {/* barra fina */}
-            <div style={{ width: '50%', maxWidth: 36, height: barH, background: b.c.bar, borderRadius: '4px 4px 0 0', transition: 'height .5s ease', opacity: b.count === 0 ? 0.15 : 1 }} />
-            {/* linha base */}
-            <div style={{ width: '100%', height: 1, background: 'var(--line-soft)', marginBottom: 12 }} />
-            {/* label e contagem */}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: b.count === 0 ? 'var(--text-3)' : b.c.text, lineHeight: 1.3 }}>{b.label}</div>
-              {b.count > 0 && <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 14, color: 'var(--text-2)', marginTop: 3 }}>{fmtNum(b.count)}</div>}
-            </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }
