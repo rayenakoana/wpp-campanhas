@@ -17,7 +17,7 @@ interface MetaAdsInsight {
 interface WppCampanha {
   id: string; name: string; status: string
   started_at: string | null; completed_at: string | null; created_at: string
-  total_envios: number; entregues: number; lidos: number; falhas: number; custo_total: number
+  total_envios: number; entregues: number; lidos: number; respondidos: number; falhas: number; custo_total: number
 }
 
 interface DealStageRow {
@@ -207,8 +207,10 @@ async function fetchWppCampanhas(from: string, to: string): Promise<WppCampanha[
   return (campanhas as any[]).map((c:any) => {
     const es = ep[c.id]??[]
     return { id:c.id, name:c.name, status:c.status, started_at:c.started_at, completed_at:c.completed_at, created_at:c.created_at,
-      total_envios:es.length, entregues:es.filter((e:any)=>['delivered','read'].includes(e.status)).length,
-      lidos:es.filter((e:any)=>e.status==='read').length, falhas:es.filter((e:any)=>e.status==='failed').length,
+      total_envios:es.length, entregues:es.filter((e:any)=>['delivered','read','replied'].includes(e.status)).length,
+      lidos:es.filter((e:any)=>['read','replied'].includes(e.status)).length,
+      respondidos:es.filter((e:any)=>e.status==='replied').length,
+      falhas:es.filter((e:any)=>e.status==='failed').length,
       custo_total:es.reduce((s:number,e:any)=>s+(e.cost?Number(e.cost):0),0) }
   })
 }
@@ -545,6 +547,7 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
   const [metric,setMetric]=useState<ChartMetric>('leads')
   const totalWppEnvios=wppCampanhas.reduce((s,c)=>s+c.total_envios,0)
   const totalWppLidos=wppCampanhas.reduce((s,c)=>s+c.lidos,0)
+  const totalWppRespondidos=wppCampanhas.reduce((s,c)=>s+c.respondidos,0)
   const totalWppCusto=wppCampanhas.reduce((s,c)=>s+c.custo_total,0)
   const convRate=totalLeads>0?((totalConversations/totalLeads)*100):0
   const freqAlert=avgFreq>=3
@@ -564,7 +567,7 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
           {label:'Conversas WhatsApp',value:totalConversations>0?fmtNum(totalConversations):'—',sub:convRate>0?`${convRate.toFixed(1).replace('.',',')}% dos leads`:'aguardando dados',green:convRate>0},
           {label:'Receita atribuída',value:fmtBRL(totalRev),sub:`ROAS ${fmtROAS(avgROAS)}`,gold:true},
           {label:'Campanhas WPP',value:fmtNum(wppCampanhas.length),sub:totalWppEnvios>0?`${fmtNum(totalWppEnvios)} disparos`:'—'},
-          {label:'Taxa de leitura WPP',value:totalWppEnvios>0?`${((totalWppLidos/totalWppEnvios)*100).toFixed(1).replace('.',',')}%`:'—',sub:totalWppCusto>0?`Custo ${fmtBRL(totalWppCusto)}`:'—'},
+          {label:'Taxa de leitura WPP',value:totalWppEnvios>0?`${((totalWppLidos/totalWppEnvios)*100).toFixed(1).replace('.',',')}%`:'—',sub:totalWppRespondidos>0?`${fmtNum(totalWppRespondidos)} responderam`:(totalWppCusto>0?`Custo ${fmtBRL(totalWppCusto)}`:'—')},
         ].map(k=>(
           <div key={k.label} className="kpi-card">
             <div className="kpi-label"><span className="base-mark"/> {k.label}</div>
@@ -830,45 +833,148 @@ function CampanhaMetaView({ campaignSeries, onDetail }: { campaignSeries: Campai
 
 // ─── WhatsApp ────────────────────────────────────────────────────────────────
 
+function WppFunilBar({ label, count, base, color, sub }: { label: string; count: number; base: number; color: string; sub?: string }) {
+  const pct = base > 0 ? Math.min((count / base) * 100, 100) : 0
+  const pctLabel = base > 0 ? `${((count / base) * 100).toFixed(1).replace('.', ',')}%` : '—'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line-soft)' }}>
+      <div style={{ width: 110, flexShrink: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>{label}</div>
+        {sub && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{sub}</div>}
+      </div>
+      <div style={{ flex: 1, height: 8, background: 'var(--line)', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ height: 8, width: `${pct}%`, background: color, borderRadius: 4, transition: 'width .5s ease', opacity: count === 0 ? 0.2 : 1 }} />
+      </div>
+      <div style={{ width: 80, textAlign: 'right', flexShrink: 0 }}>
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: count === 0 ? 'var(--text-3)' : 'var(--text)' }}>{count > 0 ? fmtNum(count) : '—'}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6 }}>{pctLabel}</span>
+      </div>
+    </div>
+  )
+}
+
 function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
-  if (wppCampanhas.length===0) return <div className="panel" style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:40}}>Nenhuma campanha de WhatsApp no período.</div>
-  const totalEnvios=wppCampanhas.reduce((s,c)=>s+c.total_envios,0)
-  const totalEntregues=wppCampanhas.reduce((s,c)=>s+c.entregues,0)
-  const totalLidos=wppCampanhas.reduce((s,c)=>s+c.lidos,0)
-  const totalCusto=wppCampanhas.reduce((s,c)=>s+c.custo_total,0)
+  const [selectedCampanha, setSelectedCampanha] = useState<WppCampanha | null>(null)
+
+  if (wppCampanhas.length === 0) return (
+    <div className="panel" style={{ fontSize: 13, color: 'var(--text-3)', textAlign: 'center', padding: 40 }}>
+      Nenhuma campanha de WhatsApp no período.
+    </div>
+  )
+
+  const totalEnvios = wppCampanhas.reduce((s, c) => s + c.total_envios, 0)
+  const totalEntregues = wppCampanhas.reduce((s, c) => s + c.entregues, 0)
+  const totalLidos = wppCampanhas.reduce((s, c) => s + c.lidos, 0)
+  const totalRespondidos = wppCampanhas.reduce((s, c) => s + c.respondidos, 0)
+  const totalFalhas = wppCampanhas.reduce((s, c) => s + c.falhas, 0)
+  const totalCusto = wppCampanhas.reduce((s, c) => s + c.custo_total, 0)
+
+  const taxaEntrega = totalEnvios > 0 ? ((totalEntregues / totalEnvios) * 100).toFixed(1).replace('.', ',') : '—'
+  const taxaLeitura = totalEntregues > 0 ? ((totalLidos / totalEntregues) * 100).toFixed(1).replace('.', ',') : '—'
+  const taxaResposta = totalLidos > 0 ? ((totalRespondidos / totalLidos) * 100).toFixed(1).replace('.', ',') : '—'
+
+  const campanha = selectedCampanha
+
   return (
     <>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:16}}>
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 16 }}>
         {[
-          {label:'Disparos totais',value:fmtNum(totalEnvios),sub:`${wppCampanhas.length} campanhas`},
-          {label:'Entregues',value:fmtNum(totalEntregues),sub:totalEnvios>0?`${((totalEntregues/totalEnvios)*100).toFixed(1).replace('.',',')}%`:'—'},
-          {label:'Taxa de leitura',value:totalEntregues>0?`${((totalLidos/totalEntregues)*100).toFixed(1).replace('.',',')}%`:'—',sub:`${fmtNum(totalLidos)} lidas`},
-          {label:'Custo WPP',value:fmtBRL(totalCusto),sub:totalEnvios>0?`${fmtBRL(totalCusto/totalEnvios)}/disparo`:'—'},
-        ].map(k=>(
+          { label: 'Disparos totais', value: fmtNum(totalEnvios), sub: `${wppCampanhas.length} campanha${wppCampanhas.length > 1 ? 's' : ''}` },
+          { label: 'Entregues', value: fmtNum(totalEntregues), sub: `${taxaEntrega}% dos disparos` },
+          { label: 'Lidos', value: fmtNum(totalLidos), sub: `${taxaLeitura}% dos entregues` },
+          { label: 'Respondidos', value: fmtNum(totalRespondidos), sub: `${taxaResposta}% dos lidos`, green: totalRespondidos > 0 },
+          { label: 'Falhas', value: totalFalhas > 0 ? fmtNum(totalFalhas) : '—', sub: totalEnvios > 0 ? `${((totalFalhas / totalEnvios) * 100).toFixed(1).replace('.', ',')}%` : '—', danger: totalFalhas > 0 },
+          { label: 'Custo WPP', value: fmtBRL(totalCusto), sub: totalEnvios > 0 ? `${fmtBRL(totalCusto / totalEnvios)}/disparo` : '—' },
+        ].map(k => (
           <div key={k.label} className="kpi-card">
-            <div className="kpi-label"><span className="base-mark"/> {k.label}</div>
-            <div className="kpi-value num">{k.value}</div>
+            <div className="kpi-label"><span className="base-mark" /> {k.label}</div>
+            <div className="kpi-value num" style={(k as any).green ? { color: 'var(--green)' } : (k as any).danger ? { color: 'var(--danger)' } : {}}>{k.value}</div>
             <div className="kpi-sub">{k.sub}</div>
           </div>
         ))}
       </div>
+
+      {/* Funil consolidado */}
+      <div className="panel" style={{ marginBottom: 14 }}>
+        <div className="panel-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <div className="panel-title">Funil de engajamento <span>{campanha ? campanha.name : 'todas as campanhas'}</span></div>
+          {campanha && (
+            <button onClick={() => setSelectedCampanha(null)} style={{ fontSize: 12, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+              Ver consolidado
+            </button>
+          )}
+        </div>
+        <div style={{ padding: '4px 0' }}>
+          <WppFunilBar label="Enviados" count={campanha ? campanha.total_envios : totalEnvios} base={campanha ? campanha.total_envios : totalEnvios} color="var(--text-3)" sub="Total disparado" />
+          <WppFunilBar label="Entregues" count={campanha ? campanha.entregues : totalEntregues} base={campanha ? campanha.total_envios : totalEnvios} color="var(--blue, #5B6EE8)" sub="Chegou ao celular" />
+          <WppFunilBar label="Lidos" count={campanha ? campanha.lidos : totalLidos} base={campanha ? campanha.entregues : totalEntregues} color="var(--red)" sub="Dois tiques azuis" />
+          <WppFunilBar label="Respondidos" count={campanha ? campanha.respondidos : totalRespondidos} base={campanha ? campanha.lidos : totalLidos} color="var(--green)" sub="Enviou mensagem" />
+        </div>
+      </div>
+
+      {/* Tabela de campanhas */}
       <div className="panel">
-        <div className="panel-head"><div className="panel-title">Campanhas WhatsApp</div></div>
-        <table className="data-table">
-          <thead><tr><th>Campanha</th><th className="r">Disparos</th><th className="r">Entregues</th><th className="r">Lidos</th><th className="r">Falhas</th><th className="r">Custo</th></tr></thead>
-          <tbody>
-            {wppCampanhas.map(c=>(
-              <tr key={c.id}>
-                <td><div className="row-title">{c.name}</div><div className="row-sub">{c.status==='completed'?'Concluída':c.status==='running'?'Em andamento':c.status}{c.completed_at?` · ${new Date(c.completed_at).toLocaleDateString('pt-BR')}`:''}</div></td>
-                <td className="r cell-num num">{fmtNum(c.total_envios)}</td>
-                <td className="r num">{fmtNum(c.entregues)} <span style={{color:'var(--text-3)',fontSize:12}}>{c.total_envios>0?`${((c.entregues/c.total_envios)*100).toFixed(0)}%`:''}</span></td>
-                <td className="r num">{fmtNum(c.lidos)} <span style={{color:'var(--text-3)',fontSize:12}}>{c.entregues>0?`${((c.lidos/c.entregues)*100).toFixed(0)}%`:''}</span></td>
-                <td className="r num" style={{color:c.falhas>0?'var(--danger)':'var(--text-3)'}}>{c.falhas>0?fmtNum(c.falhas):'—'}</td>
-                <td className="r num">{c.custo_total>0?fmtBRL(c.custo_total):'—'}</td>
+        <div className="panel-head"><div className="panel-title">Campanhas WhatsApp <span>clique para filtrar o funil</span></div></div>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Campanha</th>
+                <th className="r">Enviados</th>
+                <th className="r">Entregues</th>
+                <th className="r">Lidos</th>
+                <th className="r">Respondidos</th>
+                <th className="r">Falhas</th>
+                <th className="r">Custo</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {wppCampanhas.map(c => {
+                const isSelected = campanha?.id === c.id
+                return (
+                  <tr
+                    key={c.id}
+                    className="rowlink"
+                    onClick={() => setSelectedCampanha(isSelected ? null : c)}
+                    style={isSelected ? { background: 'var(--active)' } : {}}
+                  >
+                    <td>
+                      <div className="row-title">{c.name}</div>
+                      <div className="row-sub">
+                        {c.status === 'completed' ? 'Concluída' : c.status === 'running' ? 'Em andamento' : c.status}
+                        {c.completed_at ? ` · ${new Date(c.completed_at).toLocaleDateString('pt-BR')}` : ''}
+                      </div>
+                    </td>
+                    <td className="r cell-num num">{fmtNum(c.total_envios)}</td>
+                    <td className="r num">
+                      {fmtNum(c.entregues)}
+                      <span style={{ color: 'var(--text-3)', fontSize: 11, marginLeft: 4 }}>
+                        {c.total_envios > 0 ? `${((c.entregues / c.total_envios) * 100).toFixed(0)}%` : ''}
+                      </span>
+                    </td>
+                    <td className="r num">
+                      {fmtNum(c.lidos)}
+                      <span style={{ color: 'var(--text-3)', fontSize: 11, marginLeft: 4 }}>
+                        {c.entregues > 0 ? `${((c.lidos / c.entregues) * 100).toFixed(0)}%` : ''}
+                      </span>
+                    </td>
+                    <td className="r num" style={{ color: c.respondidos > 0 ? 'var(--green)' : 'var(--text-3)' }}>
+                      {c.respondidos > 0 ? fmtNum(c.respondidos) : '—'}
+                      <span style={{ color: 'var(--text-3)', fontSize: 11, marginLeft: 4 }}>
+                        {c.lidos > 0 && c.respondidos > 0 ? `${((c.respondidos / c.lidos) * 100).toFixed(0)}%` : ''}
+                      </span>
+                    </td>
+                    <td className="r num" style={{ color: c.falhas > 0 ? 'var(--danger)' : 'var(--text-3)' }}>
+                      {c.falhas > 0 ? fmtNum(c.falhas) : '—'}
+                    </td>
+                    <td className="r num">{c.custo_total > 0 ? fmtBRL(c.custo_total) : '—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   )
