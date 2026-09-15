@@ -869,6 +869,14 @@ function CampanhaMetaView({ campaignSeries, onDetail }: { campaignSeries: Campai
 
 // ─── WhatsApp ────────────────────────────────────────────────────────────────
 
+// Paleta suave e coesa para o gráfico de engajamento
+const ENGAJ_COLORS = {
+  respondeu:   { bar: '#34A853', bg: 'rgba(52,168,83,.08)',   text: '#1E7A3A' },
+  leu:         { bar: '#FBBC04', bg: 'rgba(251,188,4,.08)',   text: '#B8860B' },
+  recebeu:     { bar: '#4285F4', bg: 'rgba(66,133,244,.08)',  text: '#2A5DB0' },
+  naoRecebeu:  { bar: '#BDC1C6', bg: 'rgba(189,193,198,.08)', text: '#80868B' },
+}
+
 function WppEngajamentoChart({ campanha, variante }: { campanha: WppCampanha | null; variante: WppVariante | null }) {
   const src = variante ?? campanha
   if (!src) return null
@@ -876,69 +884,173 @@ function WppEngajamentoChart({ campanha, variante }: { campanha: WppCampanha | n
   const entregues = src.entregues
   const lidos = src.lidos
   const respondidos = src.respondidos
-  const naoEntregues = total - entregues - (src.falhas)
-  const pendentes = Math.max(0, naoEntregues)
+  const pendentes = Math.max(0, total - entregues - src.falhas)
 
   const bars = [
-    { label: 'Respondeu', count: respondidos, color: '#2E7D52', pct: total > 0 ? (respondidos / total) * 100 : 0 },
-    { label: 'Leu', count: lidos - respondidos, color: '#C8172A', pct: total > 0 ? ((lidos - respondidos) / total) * 100 : 0 },
-    { label: 'Recebeu', count: entregues - lidos, color: '#5B6EE8', pct: total > 0 ? ((entregues - lidos) / total) * 100 : 0 },
-    { label: 'Não recebeu', count: src.falhas + pendentes, color: 'var(--line)', pct: total > 0 ? ((src.falhas + pendentes) / total) * 100 : 0 },
+    { label: 'Respondeu',   count: respondidos,             pct: total > 0 ? (respondidos / total) * 100 : 0,                      c: ENGAJ_COLORS.respondeu },
+    { label: 'Leu',         count: lidos - respondidos,     pct: total > 0 ? ((lidos - respondidos) / total) * 100 : 0,            c: ENGAJ_COLORS.leu },
+    { label: 'Recebeu',     count: entregues - lidos,       pct: total > 0 ? ((entregues - lidos) / total) * 100 : 0,              c: ENGAJ_COLORS.recebeu },
+    { label: 'Não recebeu', count: src.falhas + pendentes,  pct: total > 0 ? ((src.falhas + pendentes) / total) * 100 : 0,        c: ENGAJ_COLORS.naoRecebeu },
   ]
 
   const maxPct = Math.max(...bars.map(b => b.pct), 1)
+  const BAR_HEIGHT = 140
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, height: 180, padding: '0 8px' }}>
-      {bars.map(b => (
-        <div key={b.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
-          <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, color: b.count === 0 ? 'var(--text-3)' : 'var(--text)' }}>
-            {b.pct > 0 ? `${b.pct.toFixed(1).replace('.', ',')}%` : '—'}
-          </div>
-          <div style={{ width: '100%', display: 'flex', alignItems: 'flex-end', height: 120 }}>
-            <div style={{
-              width: '100%',
-              height: `${Math.max((b.pct / maxPct) * 100, b.count > 0 ? 4 : 0)}%`,
-              minHeight: b.count > 0 ? 4 : 0,
-              background: b.color,
-              borderRadius: '4px 4px 0 0',
-              transition: 'height .5s ease',
-              opacity: b.count === 0 ? 0.2 : 1,
-              position: 'relative',
-            }}>
-              {b.pct > 8 && (
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: '#fff', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {fmtNum(b.count)}
-                </div>
-              )}
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, height: BAR_HEIGHT + 64, padding: '0 4px' }}>
+      {bars.map(b => {
+        const barH = Math.max((b.pct / maxPct) * BAR_HEIGHT, b.count > 0 ? 6 : 0)
+        return (
+          <div key={b.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, justifyContent: 'flex-end' }}>
+            {/* % label acima da barra */}
+            <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: b.count === 0 ? 'var(--text-3)' : b.c.text, marginBottom: 6, minHeight: 20, display: 'flex', alignItems: 'flex-end' }}>
+              {b.pct > 0 ? `${b.pct.toFixed(1).replace('.', ',')}%` : '—'}
+            </div>
+            {/* barra fina */}
+            <div style={{ width: '55%', maxWidth: 40, height: barH, background: b.c.bar, borderRadius: '4px 4px 0 0', transition: 'height .5s ease', opacity: b.count === 0 ? 0.18 : 1, position: 'relative' }} />
+            {/* linha base */}
+            <div style={{ width: '100%', height: 1, background: 'var(--line-soft)', marginBottom: 10 }} />
+            {/* label e contagem */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', lineHeight: 1.3 }}>{b.label}</div>
+              {b.count > 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{fmtNum(b.count)}</div>}
             </div>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', textAlign: 'center', lineHeight: 1.3 }}>{b.label}</div>
-          {b.pct <= 8 && b.count > 0 && (
-            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{fmtNum(b.count)}</div>
-          )}
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
-function WppFunilBar({ label, count, base, color, sub }: { label: string; count: number; base: number; color: string; sub?: string }) {
-  const pct = base > 0 ? Math.min((count / base) * 100, 100) : 0
-  const pctLabel = base > 0 ? `${((count / base) * 100).toFixed(1).replace('.', ',')}%` : '—'
+// ─── Sankey Funil WPP ────────────────────────────────────────────────────────
+
+function WppSankeyFunil({ enviados, entregues, lidos, respondidos }: {
+  enviados: number; entregues: number; lidos: number; respondidos: number
+}) {
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [width, setWidth] = useState(700)
+
+  useEffect(() => {
+    if (!svgRef.current) return
+    const obs = new ResizeObserver(es => setWidth(es[0].contentRect.width))
+    obs.observe(svgRef.current.parentElement!)
+    setWidth(svgRef.current.parentElement!.clientWidth)
+    return () => obs.disconnect()
+  }, [])
+
+  const H = 200
+  const PAD = { top: 20, bottom: 40, left: 0, right: 0 }
+  const W = width
+  const chartH = H - PAD.top - PAD.bottom
+
+  // Etapas
+  const steps = [
+    { key: 'env',  label: 'Enviados',   sub: '100%',                                                           count: enviados,    color: '#9AA0A6' },
+    { key: 'ent',  label: 'Entregues',  sub: enviados > 0 ? `${((entregues/enviados)*100).toFixed(1).replace('.',',')}%` : '—', count: entregues,   color: '#4285F4' },
+    { key: 'lid',  label: 'Lidos',      sub: entregues > 0 ? `${((lidos/entregues)*100).toFixed(1).replace('.',',')}%` : '—',   count: lidos,       color: '#FBBC04' },
+    { key: 'res',  label: 'Respondidos',sub: lidos > 0 ? `${((respondidos/lidos)*100).toFixed(1).replace('.',',')}%` : '—',     count: respondidos, color: '#34A853' },
+  ]
+
+  const base = enviados || 1
+  // altura de cada nó proporcional ao volume
+  const nodeW = Math.max(18, Math.min(36, W * 0.04))
+  const gap = (W - nodeW * steps.length) / (steps.length - 1)
+
+  const nodeH = (count: number) => Math.max((count / base) * chartH, count > 0 ? 4 : 2)
+  const nodeY = (count: number) => PAD.top + (chartH - nodeH(count)) / 2  // centralizado verticalmente
+  const nodeX = (i: number) => i * (nodeW + gap)
+
+  // Constrói path de fluxo entre dois nós
+  const flowPath = (i: number) => {
+    const left = steps[i], right = steps[i + 1]
+    const x1 = nodeX(i) + nodeW
+    const x2 = nodeX(i + 1)
+    const y1t = nodeY(left.count)
+    const y1b = y1t + nodeH(left.count)
+    // proporcional ao volume do nó direito, centrado no nó esquerdo
+    const rightH = nodeH(right.count)
+    const leftCenter = nodeY(left.count) + nodeH(left.count) / 2
+    const y2t = leftCenter - rightH / 2
+    const y2b = leftCenter + rightH / 2
+    const cx = (x1 + x2) / 2
+    return `M${x1},${y1t} C${cx},${y1t} ${cx},${y2t} ${x2},${y2t} L${x2},${y2b} C${cx},${y2b} ${cx},${y1b} ${x1},${y1b} Z`
+  }
+
+  // "perda" entre dois nós (quem não avançou)
+  const lossPath = (i: number) => {
+    const left = steps[i], right = steps[i + 1]
+    const x1 = nodeX(i) + nodeW
+    const x2 = nodeX(i + 1)
+    const leftH = nodeH(left.count)
+    const rightH = nodeH(right.count)
+    const leftCenter = nodeY(left.count) + leftH / 2
+    // parte de baixo do nó esquerdo que "caiu"
+    const lossH = leftH - rightH
+    if (lossH <= 0) return null
+    const y1t = leftCenter + rightH / 2
+    const y1b = y1t + lossH
+    const dropY = Math.min(PAD.top + chartH + 12, y1b + 20)
+    const cx = (x1 + x2) / 2
+    return { path: `M${x1},${y1t} C${cx},${y1t} ${cx},${y1b} ${x2},${dropY} L${x1},${dropY} Z`, loss: left.count - right.count }
+  }
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line-soft)' }}>
-      <div style={{ width: 110, flexShrink: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{sub}</div>}
-      </div>
-      <div style={{ flex: 1, height: 8, background: 'var(--line)', borderRadius: 4, overflow: 'hidden' }}>
-        <div style={{ height: 8, width: `${pct}%`, background: color, borderRadius: 4, transition: 'width .5s ease', opacity: count === 0 ? 0.2 : 1 }} />
-      </div>
-      <div style={{ width: 80, textAlign: 'right', flexShrink: 0 }}>
-        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: count === 0 ? 'var(--text-3)' : 'var(--text)' }}>{count > 0 ? fmtNum(count) : '—'}</span>
-        <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6 }}>{pctLabel}</span>
-      </div>
+    <div style={{ width: '100%' }}>
+      <svg ref={svgRef} width="100%" height={H + 20} style={{ overflow: 'visible', display: 'block' }}>
+        <defs>
+          {steps.slice(0, -1).map((s, i) => (
+            <linearGradient key={i} id={`sk-grad-${i}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={s.color} stopOpacity="0.35" />
+              <stop offset="100%" stopColor={steps[i + 1].color} stopOpacity="0.35" />
+            </linearGradient>
+          ))}
+          {steps.slice(0, -1).map((s, i) => (
+            <linearGradient key={`l${i}`} id={`sk-loss-${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={s.color} stopOpacity="0.12" />
+              <stop offset="100%" stopColor={s.color} stopOpacity="0" />
+            </linearGradient>
+          ))}
+        </defs>
+
+        {/* Fluxos de perda */}
+        {steps.slice(0, -1).map((_, i) => {
+          const lp = lossPath(i)
+          if (!lp) return null
+          return <path key={`loss-${i}`} d={lp.path} fill={`url(#sk-loss-${i})`} />
+        })}
+
+        {/* Fluxos de avanço */}
+        {steps.slice(0, -1).map((_, i) => (
+          <path key={`flow-${i}`} d={flowPath(i)} fill={`url(#sk-grad-${i})`} />
+        ))}
+
+        {/* Nós */}
+        {steps.map((s, i) => {
+          const x = nodeX(i)
+          const y = nodeY(s.count)
+          const h = nodeH(s.count)
+          return (
+            <g key={s.key}>
+              <rect x={x} y={y} width={nodeW} height={h} rx={4} fill={s.color} opacity={s.count > 0 ? 1 : 0.2} />
+            </g>
+          )
+        })}
+
+        {/* Labels abaixo */}
+        {steps.map((s, i) => {
+          const x = nodeX(i) + nodeW / 2
+          const labelY = PAD.top + chartH + 16
+          return (
+            <g key={`lbl-${s.key}`}>
+              <text x={x} y={labelY} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--text-2)">{s.label}</text>
+              <text x={x} y={labelY + 14} textAnchor="middle" fontSize={18} fontWeight={700} fontFamily="Barlow Condensed, sans-serif" fill={s.count > 0 ? 'var(--text)' : 'var(--text-3)'}>
+                {s.count > 0 ? fmtNum(s.count) : '—'}
+              </text>
+              <text x={x} y={labelY + 28} textAnchor="middle" fontSize={11} fill="var(--text-3)">{s.sub}</text>
+            </g>
+          )
+        })}
+      </svg>
     </div>
   )
 }
@@ -1009,16 +1121,21 @@ function WppDetalheCampanha({ campanha, onBack }: { campanha: WppCampanha; onBac
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 12, marginBottom: 16 }}>
         {[
-          { label: 'Enviados', value: fmtNum(src.total_envios), sub: '100%' },
-          { label: 'Entregues', value: fmtNum(src.entregues), sub: `${taxaEntrega}% dos enviados` },
-          { label: 'Lidos', value: fmtNum(src.lidos), sub: `${taxaLeitura}% dos entregues` },
-          { label: 'Respondidos', value: fmtNum(src.respondidos), sub: `${taxaResposta}% dos lidos`, green: src.respondidos > 0 },
-          { label: 'Falhas', value: src.falhas > 0 ? fmtNum(src.falhas) : '—', sub: src.total_envios > 0 ? `${((src.falhas / src.total_envios) * 100).toFixed(1).replace('.', ',')}%` : '—', danger: src.falhas > 0 },
-          { label: 'Custo', value: campanha.custo_total > 0 ? fmtBRL(campanha.custo_total) : '—', sub: campanha.total_envios > 0 && campanha.custo_total > 0 ? `${fmtBRL(campanha.custo_total / campanha.total_envios)}/disparo` : '—' },
+          { label: 'Enviados',    value: fmtNum(src.total_envios), sub: '100%',                                                                                                                             accent: '#9AA0A6' },
+          { label: 'Entregues',   value: fmtNum(src.entregues),    sub: `${taxaEntrega}% dos enviados`,                                                                                                     accent: '#4285F4' },
+          { label: 'Lidos',       value: fmtNum(src.lidos),        sub: `${taxaLeitura}% dos entregues`,                                                                                                    accent: '#FBBC04' },
+          { label: 'Respondidos', value: fmtNum(src.respondidos),  sub: `${taxaResposta}% dos lidos`,       green: src.respondidos > 0,                                                                    accent: '#34A853' },
+          { label: 'Falhas',      value: src.falhas > 0 ? fmtNum(src.falhas) : '—', sub: src.total_envios > 0 ? `${((src.falhas / src.total_envios) * 100).toFixed(1).replace('.', ',')}%` : '—', danger: src.falhas > 0, accent: 'var(--danger)' },
+          { label: 'Custo',       value: campanha.custo_total > 0 ? fmtBRL(campanha.custo_total) : '—',     sub: campanha.total_envios > 0 && campanha.custo_total > 0 ? `${fmtBRL(campanha.custo_total / campanha.total_envios)}/disparo` : '—', accent: 'var(--text-3)' },
         ].map(k => (
-          <div key={k.label} className="kpi-card">
-            <div className="kpi-label"><span className="base-mark" /> {k.label}</div>
-            <div className="kpi-value num" style={(k as any).green ? { color: 'var(--green)' } : (k as any).danger ? { color: 'var(--danger)' } : {}}>{k.value}</div>
+          <div key={k.label} className="kpi-card" style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* accent line no topo */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: (k as any).accent ?? 'var(--line)', borderRadius: '8px 8px 0 0', opacity: 0.7 }} />
+            <div className="kpi-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: (k as any).accent ?? 'var(--text-3)', flexShrink: 0, opacity: 0.8 }} />
+              {k.label}
+            </div>
+            <div className="kpi-value num" style={(k as any).green ? { color: '#34A853' } : (k as any).danger ? { color: 'var(--danger)' } : {}}>{k.value}</div>
             <div className="kpi-sub">{k.sub}</div>
           </div>
         ))}
@@ -1039,10 +1156,10 @@ function WppDetalheCampanha({ campanha, onBack }: { campanha: WppCampanha; onBac
             <div style={{ color: 'var(--text-3)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Total</div>
 
             {[
-              { label: 'Responderam', count: respondidos, color: '#2E7D52' },
-              { label: 'Leram (sem responder)', count: leuSemResponder, color: '#C8172A' },
-              { label: 'Receberam (sem ler)', count: recebeuSemLer, color: '#5B6EE8' },
-              { label: 'Não receberam', count: naoRecebeu, color: 'var(--text-3)' },
+              { label: 'Responderam',          count: respondidos,      color: '#34A853' },
+              { label: 'Leram (sem responder)', count: leuSemResponder, color: '#FBBC04' },
+              { label: 'Receberam (sem ler)',   count: recebeuSemLer,   color: '#4285F4' },
+              { label: 'Não receberam',         count: naoRecebeu,      color: '#BDC1C6' },
             ].map(row => (
               <React.Fragment key={row.label}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1061,14 +1178,16 @@ function WppDetalheCampanha({ campanha, onBack }: { campanha: WppCampanha; onBac
         </div>
       </div>
 
-      {/* Funil de entrega */}
+      {/* Funil de entrega — Sankey */}
       <div className="panel">
         <div className="panel-head"><div className="panel-title">Funil de entrega</div></div>
-        <div style={{ padding: '4px 0' }}>
-          <WppFunilBar label="Enviados" count={src.total_envios} base={src.total_envios} color="var(--text-3)" sub="Total disparado" />
-          <WppFunilBar label="Entregues" count={src.entregues} base={src.total_envios} color="#5B6EE8" sub="Chegou ao celular" />
-          <WppFunilBar label="Lidos" count={src.lidos} base={src.entregues} color="var(--red)" sub="Dois tiques azuis" />
-          <WppFunilBar label="Respondidos" count={src.respondidos} base={src.lidos} color="var(--green)" sub="Enviou mensagem" />
+        <div style={{ padding: '12px 8px 0' }}>
+          <WppSankeyFunil
+            enviados={src.total_envios}
+            entregues={src.entregues}
+            lidos={src.lidos}
+            respondidos={src.respondidos}
+          />
         </div>
       </div>
     </div>
@@ -1107,36 +1226,37 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 16 }}>
         {[
-          { label: 'Disparos totais', value: fmtNum(totalEnvios), sub: `${wppCampanhas.length} campanha${wppCampanhas.length > 1 ? 's' : ''}` },
-          { label: 'Entregues', value: fmtNum(totalEntregues), sub: `${taxaEntrega}% dos disparos` },
-          { label: 'Lidos', value: fmtNum(totalLidos), sub: `${taxaLeitura}% dos entregues` },
-          { label: 'Respondidos', value: fmtNum(totalRespondidos), sub: `${taxaResposta}% dos lidos`, green: totalRespondidos > 0 },
-          { label: 'Falhas', value: totalFalhas > 0 ? fmtNum(totalFalhas) : '—', sub: totalEnvios > 0 ? `${((totalFalhas / totalEnvios) * 100).toFixed(1).replace('.', ',')}%` : '—', danger: totalFalhas > 0 },
-          { label: 'Custo WPP', value: fmtBRL(totalCusto), sub: totalEnvios > 0 ? `${fmtBRL(totalCusto / totalEnvios)}/disparo` : '—' },
+          { label: 'Disparos totais', value: fmtNum(totalEnvios),     sub: `${wppCampanhas.length} campanha${wppCampanhas.length > 1 ? 's' : ''}`,                                        accent: '#9AA0A6' },
+          { label: 'Entregues',       value: fmtNum(totalEntregues),   sub: `${taxaEntrega}% dos disparos`,                                                                                 accent: '#4285F4' },
+          { label: 'Lidos',           value: fmtNum(totalLidos),       sub: `${taxaLeitura}% dos entregues`,                                                                                accent: '#FBBC04' },
+          { label: 'Respondidos',     value: fmtNum(totalRespondidos), sub: `${taxaResposta}% dos lidos`,        green: totalRespondidos > 0,                                               accent: '#34A853' },
+          { label: 'Falhas',          value: totalFalhas > 0 ? fmtNum(totalFalhas) : '—', sub: totalEnvios > 0 ? `${((totalFalhas / totalEnvios) * 100).toFixed(1).replace('.', ',')}%` : '—', danger: totalFalhas > 0, accent: 'var(--danger)' },
+          { label: 'Custo WPP',       value: fmtBRL(totalCusto),       sub: totalEnvios > 0 ? `${fmtBRL(totalCusto / totalEnvios)}/disparo` : '—',                                         accent: 'var(--text-3)' },
         ].map(k => (
-          <div key={k.label} className="kpi-card">
-            <div className="kpi-label"><span className="base-mark" /> {k.label}</div>
-            <div className="kpi-value num" style={(k as any).green ? { color: 'var(--green)' } : (k as any).danger ? { color: 'var(--danger)' } : {}}>{k.value}</div>
+          <div key={k.label} className="kpi-card" style={{ position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: (k as any).accent ?? 'var(--line)', borderRadius: '8px 8px 0 0', opacity: 0.7 }} />
+            <div className="kpi-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: (k as any).accent ?? 'var(--text-3)', flexShrink: 0, opacity: 0.8 }} />
+              {k.label}
+            </div>
+            <div className="kpi-value num" style={(k as any).green ? { color: '#34A853' } : (k as any).danger ? { color: 'var(--danger)' } : {}}>{k.value}</div>
             <div className="kpi-sub">{k.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Funil consolidado */}
+      {/* Funil consolidado — Sankey */}
       <div className="panel" style={{ marginBottom: 14 }}>
         <div className="panel-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <div className="panel-title">Funil de engajamento <span>{campanha ? campanha.name : 'todas as campanhas'}</span></div>
-          {campanha && (
-            <button onClick={() => setSelectedCampanha(null)} style={{ fontSize: 12, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-              Ver consolidado
-            </button>
-          )}
+          <div className="panel-title">Funil de entrega <span>todas as campanhas</span></div>
         </div>
-        <div style={{ padding: '4px 0' }}>
-          <WppFunilBar label="Enviados" count={campanha ? campanha.total_envios : totalEnvios} base={campanha ? campanha.total_envios : totalEnvios} color="var(--text-3)" sub="Total disparado" />
-          <WppFunilBar label="Entregues" count={campanha ? campanha.entregues : totalEntregues} base={campanha ? campanha.total_envios : totalEnvios} color="#5B6EE8" sub="Chegou ao celular" />
-          <WppFunilBar label="Lidos" count={campanha ? campanha.lidos : totalLidos} base={campanha ? campanha.entregues : totalEntregues} color="var(--red)" sub="Dois tiques azuis" />
-          <WppFunilBar label="Respondidos" count={campanha ? campanha.respondidos : totalRespondidos} base={campanha ? campanha.lidos : totalLidos} color="var(--green)" sub="Enviou mensagem" />
+        <div style={{ padding: '12px 8px 0' }}>
+          <WppSankeyFunil
+            enviados={totalEnvios}
+            entregues={totalEntregues}
+            lidos={totalLidos}
+            respondidos={totalRespondidos}
+          />
         </div>
       </div>
 
