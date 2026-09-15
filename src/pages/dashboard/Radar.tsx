@@ -903,17 +903,17 @@ function WppEngajamentoChart({ campanha, variante }: { campanha: WppCampanha | n
         return (
           <div key={b.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, justifyContent: 'flex-end' }}>
             {/* % label acima da barra */}
-            <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: b.count === 0 ? 'var(--text-3)' : b.c.text, marginBottom: 6, minHeight: 20, display: 'flex', alignItems: 'flex-end' }}>
+            <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: b.count === 0 ? 'var(--text-3)' : b.c.bar, marginBottom: 8, minHeight: 22, display: 'flex', alignItems: 'flex-end' }}>
               {b.pct > 0 ? `${b.pct.toFixed(1).replace('.', ',')}%` : '—'}
             </div>
             {/* barra fina */}
-            <div style={{ width: '55%', maxWidth: 40, height: barH, background: b.c.bar, borderRadius: '4px 4px 0 0', transition: 'height .5s ease', opacity: b.count === 0 ? 0.18 : 1, position: 'relative' }} />
+            <div style={{ width: '50%', maxWidth: 36, height: barH, background: b.c.bar, borderRadius: '4px 4px 0 0', transition: 'height .5s ease', opacity: b.count === 0 ? 0.15 : 1 }} />
             {/* linha base */}
-            <div style={{ width: '100%', height: 1, background: 'var(--line-soft)', marginBottom: 10 }} />
+            <div style={{ width: '100%', height: 1, background: 'var(--line-soft)', marginBottom: 12 }} />
             {/* label e contagem */}
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', lineHeight: 1.3 }}>{b.label}</div>
-              {b.count > 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{fmtNum(b.count)}</div>}
+              <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: b.count === 0 ? 'var(--text-3)' : b.c.text, lineHeight: 1.3 }}>{b.label}</div>
+              {b.count > 0 && <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 14, color: 'var(--text-2)', marginTop: 3 }}>{fmtNum(b.count)}</div>}
             </div>
           </div>
         )
@@ -927,130 +927,152 @@ function WppEngajamentoChart({ campanha, variante }: { campanha: WppCampanha | n
 function WppSankeyFunil({ enviados, entregues, lidos, respondidos }: {
   enviados: number; entregues: number; lidos: number; respondidos: number
 }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const [width, setWidth] = useState(700)
 
   useEffect(() => {
-    if (!svgRef.current) return
+    if (!wrapRef.current) return
     const obs = new ResizeObserver(es => setWidth(es[0].contentRect.width))
-    obs.observe(svgRef.current.parentElement!)
-    setWidth(svgRef.current.parentElement!.clientWidth)
+    obs.observe(wrapRef.current)
+    setWidth(wrapRef.current.clientWidth)
     return () => obs.disconnect()
   }, [])
 
-  const H = 200
-  const PAD = { top: 20, bottom: 40, left: 0, right: 0 }
-  const W = width
-  const chartH = H - PAD.top - PAD.bottom
+  const SVG_H = 120          // altura só do diagrama
+  const PAD = { top: 8, bottom: 8 }
+  const chartH = SVG_H - PAD.top - PAD.bottom
 
-  // Etapas
   const steps = [
-    { key: 'env',  label: 'Enviados',   sub: '100%',                                                           count: enviados,    color: '#9AA0A6' },
-    { key: 'ent',  label: 'Entregues',  sub: enviados > 0 ? `${((entregues/enviados)*100).toFixed(1).replace('.',',')}%` : '—', count: entregues,   color: '#4285F4' },
-    { key: 'lid',  label: 'Lidos',      sub: entregues > 0 ? `${((lidos/entregues)*100).toFixed(1).replace('.',',')}%` : '—',   count: lidos,       color: '#FBBC04' },
-    { key: 'res',  label: 'Respondidos',sub: lidos > 0 ? `${((respondidos/lidos)*100).toFixed(1).replace('.',',')}%` : '—',     count: respondidos, color: '#34A853' },
+    { key: 'env',  label: 'Enviados',    pct: '100%',
+      sub: `${fmtNum(enviados)} disparos`,
+      count: enviados,    color: '#9AA0A6' },
+    { key: 'ent',  label: 'Entregues',
+      pct: enviados > 0 ? `${((entregues/enviados)*100).toFixed(1).replace('.',',')}%` : '—',
+      sub: 'dos enviados',
+      count: entregues,   color: '#4285F4' },
+    { key: 'lid',  label: 'Lidos',
+      pct: entregues > 0 ? `${((lidos/entregues)*100).toFixed(1).replace('.',',')}%` : '—',
+      sub: 'dos entregues',
+      count: lidos,       color: '#FBBC04' },
+    { key: 'res',  label: 'Respondidos',
+      pct: lidos > 0 ? `${((respondidos/lidos)*100).toFixed(1).replace('.',',')}%` : '—',
+      sub: 'dos lidos',
+      count: respondidos, color: '#34A853' },
   ]
 
   const base = enviados || 1
-  // altura de cada nó proporcional ao volume
-  const nodeW = Math.max(18, Math.min(36, W * 0.04))
-  const gap = (W - nodeW * steps.length) / (steps.length - 1)
+  const nodeW = Math.max(14, Math.min(28, width * 0.03))
+  const gap   = (width - nodeW * steps.length) / (steps.length - 1)
 
-  const nodeH = (count: number) => Math.max((count / base) * chartH, count > 0 ? 4 : 2)
-  const nodeY = (count: number) => PAD.top + (chartH - nodeH(count)) / 2  // centralizado verticalmente
+  const nodeH = (n: number) => Math.max((n / base) * chartH, n > 0 ? 4 : 2)
+  const nodeY = (n: number) => PAD.top + (chartH - nodeH(n)) / 2
   const nodeX = (i: number) => i * (nodeW + gap)
 
-  // Constrói path de fluxo entre dois nós
   const flowPath = (i: number) => {
-    const left = steps[i], right = steps[i + 1]
-    const x1 = nodeX(i) + nodeW
-    const x2 = nodeX(i + 1)
-    const y1t = nodeY(left.count)
-    const y1b = y1t + nodeH(left.count)
-    // proporcional ao volume do nó direito, centrado no nó esquerdo
-    const rightH = nodeH(right.count)
-    const leftCenter = nodeY(left.count) + nodeH(left.count) / 2
-    const y2t = leftCenter - rightH / 2
-    const y2b = leftCenter + rightH / 2
+    const L = steps[i], R = steps[i + 1]
+    const x1 = nodeX(i) + nodeW, x2 = nodeX(i + 1)
+    const y1t = nodeY(L.count), y1b = y1t + nodeH(L.count)
+    const rH = nodeH(R.count)
+    const lc = nodeY(L.count) + nodeH(L.count) / 2
+    const y2t = lc - rH / 2, y2b = lc + rH / 2
     const cx = (x1 + x2) / 2
     return `M${x1},${y1t} C${cx},${y1t} ${cx},${y2t} ${x2},${y2t} L${x2},${y2b} C${cx},${y2b} ${cx},${y1b} ${x1},${y1b} Z`
   }
 
-  // "perda" entre dois nós (quem não avançou)
   const lossPath = (i: number) => {
-    const left = steps[i], right = steps[i + 1]
-    const x1 = nodeX(i) + nodeW
-    const x2 = nodeX(i + 1)
-    const leftH = nodeH(left.count)
-    const rightH = nodeH(right.count)
-    const leftCenter = nodeY(left.count) + leftH / 2
-    // parte de baixo do nó esquerdo que "caiu"
-    const lossH = leftH - rightH
+    const L = steps[i], R = steps[i + 1]
+    const x1 = nodeX(i) + nodeW, x2 = nodeX(i + 1)
+    const lH = nodeH(L.count), rH = nodeH(R.count)
+    const lossH = lH - rH
     if (lossH <= 0) return null
-    const y1t = leftCenter + rightH / 2
-    const y1b = y1t + lossH
-    const dropY = Math.min(PAD.top + chartH + 12, y1b + 20)
+    const lc = nodeY(L.count) + lH / 2
+    const y1t = lc + rH / 2, y1b = y1t + lossH
+    const dropY = Math.min(PAD.top + chartH + 10, y1b + 16)
     const cx = (x1 + x2) / 2
-    return { path: `M${x1},${y1t} C${cx},${y1t} ${cx},${y1b} ${x2},${dropY} L${x1},${dropY} Z`, loss: left.count - right.count }
+    return `M${x1},${y1t} C${cx},${y1t} ${cx},${y1b} ${x2},${dropY} L${x1},${dropY} Z`
   }
 
+  // posição horizontal central de cada nó (para alinhar labels HTML)
+  const centerPct = (i: number) => `${((nodeX(i) + nodeW / 2) / width) * 100}%`
+
   return (
-    <div style={{ width: '100%' }}>
-      <svg ref={svgRef} width="100%" height={H + 20} style={{ overflow: 'visible', display: 'block' }}>
+    <div ref={wrapRef} style={{ width: '100%' }}>
+
+      {/* SVG — só o diagrama, sem texto */}
+      <svg ref={svgRef} width="100%" height={SVG_H} style={{ display: 'block', overflow: 'visible' }}>
         <defs>
-          {steps.slice(0, -1).map((s, i) => (
-            <linearGradient key={i} id={`sk-grad-${i}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={s.color} stopOpacity="0.35" />
-              <stop offset="100%" stopColor={steps[i + 1].color} stopOpacity="0.35" />
+          {steps.slice(0,-1).map((s,i) => (
+            <linearGradient key={i} id={`sk-g-${i}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stopColor={s.color}          stopOpacity="0.4"/>
+              <stop offset="100%" stopColor={steps[i+1].color} stopOpacity="0.4"/>
             </linearGradient>
           ))}
-          {steps.slice(0, -1).map((s, i) => (
-            <linearGradient key={`l${i}`} id={`sk-loss-${i}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={s.color} stopOpacity="0.12" />
-              <stop offset="100%" stopColor={s.color} stopOpacity="0" />
+          {steps.slice(0,-1).map((s,i) => (
+            <linearGradient key={`lk${i}`} id={`sk-l-${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor={s.color} stopOpacity="0.15"/>
+              <stop offset="100%" stopColor={s.color} stopOpacity="0"/>
             </linearGradient>
           ))}
         </defs>
 
-        {/* Fluxos de perda */}
-        {steps.slice(0, -1).map((_, i) => {
-          const lp = lossPath(i)
-          if (!lp) return null
-          return <path key={`loss-${i}`} d={lp.path} fill={`url(#sk-loss-${i})`} />
+        {/* perdas */}
+        {steps.slice(0,-1).map((_,i) => {
+          const p = lossPath(i); if (!p) return null
+          return <path key={`l${i}`} d={p} fill={`url(#sk-l-${i})`}/>
         })}
-
-        {/* Fluxos de avanço */}
-        {steps.slice(0, -1).map((_, i) => (
-          <path key={`flow-${i}`} d={flowPath(i)} fill={`url(#sk-grad-${i})`} />
+        {/* fluxos */}
+        {steps.slice(0,-1).map((_,i) => (
+          <path key={`f${i}`} d={flowPath(i)} fill={`url(#sk-g-${i})`}/>
         ))}
-
-        {/* Nós */}
-        {steps.map((s, i) => {
-          const x = nodeX(i)
-          const y = nodeY(s.count)
-          const h = nodeH(s.count)
-          return (
-            <g key={s.key}>
-              <rect x={x} y={y} width={nodeW} height={h} rx={4} fill={s.color} opacity={s.count > 0 ? 1 : 0.2} />
-            </g>
-          )
-        })}
-
-        {/* Labels abaixo */}
-        {steps.map((s, i) => {
-          const x = nodeX(i) + nodeW / 2
-          const labelY = PAD.top + chartH + 16
-          return (
-            <g key={`lbl-${s.key}`}>
-              <text x={x} y={labelY} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--text-2)">{s.label}</text>
-              <text x={x} y={labelY + 14} textAnchor="middle" fontSize={18} fontWeight={700} fontFamily="Barlow Condensed, sans-serif" fill={s.count > 0 ? 'var(--text)' : 'var(--text-3)'}>
-                {s.count > 0 ? fmtNum(s.count) : '—'}
-              </text>
-              <text x={x} y={labelY + 28} textAnchor="middle" fontSize={11} fill="var(--text-3)">{s.sub}</text>
-            </g>
-          )
-        })}
+        {/* nós */}
+        {steps.map((s,i) => (
+          <rect key={s.key} x={nodeX(i)} y={nodeY(s.count)} width={nodeW} height={nodeH(s.count)}
+            rx={3} fill={s.color} opacity={s.count > 0 ? 1 : 0.2}/>
+        ))}
       </svg>
+
+      {/* Labels HTML — hierarquia tipográfica completa */}
+      <div style={{ position: 'relative', height: 72, marginTop: 8 }}>
+        {steps.map((s, i) => (
+          <div key={s.key} style={{
+            position: 'absolute',
+            left: centerPct(i),
+            transform: 'translateX(-50%)',
+            textAlign: 'center',
+            width: Math.max(80, gap * 0.9),
+          }}>
+            {/* eyebrow — nome da etapa */}
+            <div style={{
+              fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+              letterSpacing: '0.07em', color: s.color, marginBottom: 4,
+              opacity: s.count > 0 ? 1 : 0.45,
+            }}>{s.label}</div>
+
+            {/* número principal — elemento dominante */}
+            <div style={{
+              fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700,
+              fontSize: 26, lineHeight: 1, letterSpacing: '-0.01em',
+              color: s.count > 0 ? 'var(--text)' : 'var(--text-3)',
+              marginBottom: 4,
+            }}>
+              {s.count > 0 ? fmtNum(s.count) : '—'}
+            </div>
+
+            {/* porcentagem — destaque secundário com cor da etapa */}
+            <div style={{
+              fontSize: 12, fontWeight: 600,
+              color: s.count > 0 ? s.color : 'var(--text-3)',
+              marginBottom: 2,
+            }}>{s.pct}</div>
+
+            {/* contexto — tom apagado */}
+            <div style={{
+              fontSize: 10.5, color: 'var(--text-3)', fontWeight: 400,
+            }}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
