@@ -1128,12 +1128,6 @@ function WppDetalheCampanha({ campanha, onBack }: { campanha: WppCampanha; onBac
   const taxaLeitura = src.entregues > 0 ? ((src.lidos / src.entregues) * 100).toFixed(1).replace('.', ',') : '—'
   const taxaResposta = src.lidos > 0 ? ((src.respondidos / src.lidos) * 100).toFixed(1).replace('.', ',') : '—'
 
-  // classificação de engajamento
-  const respondidos = src.respondidos
-  const leuSemResponder = src.lidos - src.respondidos
-  const recebeuSemLer = src.entregues - src.lidos
-  const naoRecebeu = src.total_envios - src.entregues
-
   return (
     <div>
       {/* Header */}
