@@ -191,27 +191,26 @@ function DrawerCampanha({ campanha, onClose }: { campanha: CampanhaCompleta; onC
           borderBottom: '1px solid var(--line-soft)', flexShrink: 0,
         }}>
           {[
-            { label: 'Enviados',  valor: enviados,  cor: 'var(--text)' },
-            { label: 'Entregues', valor: entregues, cor: 'var(--green)', pct: pct(entregues, enviados) },
-            { label: 'Lidos',     valor: lidos,     cor: '#60b4ff',     pct: pct(lidos, enviados) },
-            { label: 'Falhas',    valor: falhas,    cor: 'var(--red)',  pct: pct(falhas, enviados) },
-            { label: 'Custo',     valor: null,      cor: 'var(--gold)', texto: formatarMoeda(custo) },
+            { label: 'Enviados',  value: enviados.toLocaleString('pt-BR'),   sub: '100%',                      accent: '#9AA0A6' },
+            { label: 'Entregues', value: entregues.toLocaleString('pt-BR'),  sub: `${pct(entregues, enviados)} dos enviados`, accent: '#4285F4' },
+            { label: 'Lidos',     value: lidos.toLocaleString('pt-BR'),      sub: `${pct(lidos, enviados)} dos enviados`,     accent: '#FBBC04' },
+            { label: 'Falhas',    value: falhas > 0 ? falhas.toLocaleString('pt-BR') : '—', sub: falhas > 0 ? `${pct(falhas, enviados)} dos enviados` : '—', accent: 'var(--danger)', danger: falhas > 0 },
+            { label: 'Custo',     value: formatarMoeda(custo),               sub: enviados > 0 && custo > 0 ? `R$ ${(custo/enviados).toFixed(2).replace('.',',')} /disparo` : '—', accent: '#9AA0A6' },
           ].map((k, i) => (
             <div key={k.label} style={{
-              padding: '16px 20px',
+              padding: '16px 20px', position: 'relative', overflow: 'hidden',
               borderRight: i < 4 ? '1px solid var(--line-soft)' : 'none',
             }}>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em', marginBottom: 6 }}>{k.label.toUpperCase()}</div>
-              <div style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontWeight: 700, fontSize: 26,
-                color: k.cor, letterSpacing: '-0.01em',
-              }}>
-                {k.texto ?? (k.valor ?? 0).toLocaleString('pt-BR')}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: k.accent, opacity: 0.7 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em', marginBottom: 6, marginTop: 4 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: k.accent, opacity: 0.8, flexShrink: 0 }} />
+                {k.label.toUpperCase()}
               </div>
-              {k.pct && (
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{k.pct} dos enviados</div>
-              )}
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 26,
+                color: (k as any).danger ? 'var(--danger)' : 'var(--text)', letterSpacing: '-0.01em' }}>
+                {k.value}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{k.sub}</div>
             </div>
           ))}
         </div>
@@ -221,16 +220,16 @@ function DrawerCampanha({ campanha, onClose }: { campanha: CampanhaCompleta; onC
           <div style={{ padding: '16px 28px', borderBottom: '1px solid var(--line-soft)', flexShrink: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
-                { label: 'Taxa de entrega', valor: entregues, cor: 'var(--green)' },
-                { label: 'Taxa de leitura', valor: lidos,     cor: '#60b4ff' },
-                { label: 'Taxa de falha',   valor: falhas,    cor: 'var(--red)' },
+                { label: 'Taxa de entrega', valor: entregues, cor: '#4285F4' },
+                { label: 'Taxa de leitura', valor: lidos,     cor: '#FBBC04' },
+                { label: 'Taxa de falha',   valor: falhas,    cor: 'var(--danger)' },
               ].map((b) => (
                 <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 120, fontSize: 11.5, color: 'var(--text-3)', letterSpacing: '0.01em', flexShrink: 0 }}>
                     {b.label}
                   </div>
                   <BarraPct valor={b.valor} total={enviados} cor={b.cor} />
-                  <div style={{ width: 36, textAlign: 'right', fontSize: 12, fontWeight: 600, color: b.cor, flexShrink: 0 }}>
+                  <div style={{ width: 36, textAlign: 'right', fontSize: 12, fontWeight: 600, color: b.label === 'Taxa de falha' && falhas === 0 ? 'var(--text-3)' : b.cor, flexShrink: 0 }}>
                     {pct(b.valor, enviados)}
                   </div>
                 </div>
@@ -407,10 +406,10 @@ export default function Campanhas() {
             <tr>
               <th>Campanha</th>
               <th>Status</th>
-              <th className="r">Leads</th>
               <th className="r">Enviadas</th>
               <th className="r">Entregues</th>
               <th className="r">Lidas</th>
+              <th className="r">Falhas</th>
               <th className="r">Custo</th>
               <th></th>
             </tr>
@@ -448,12 +447,18 @@ export default function Campanhas() {
                     {rotuloStatus[c.status] ?? c.status}
                   </span>
                 </td>
-                <td className="r cell-num num">
-                  {c.total_envios > 0 ? c.total_envios.toLocaleString('pt-BR') : '—'}
-                </td>
                 <td className="r num">{c.total_envios > 0 ? c.total_envios.toLocaleString('pt-BR') : '—'}</td>
-                <td className="r num">{c.entregues > 0 ? c.entregues.toLocaleString('pt-BR') : '—'}</td>
-                <td className="r num">{c.lidos > 0 ? c.lidos.toLocaleString('pt-BR') : '—'}</td>
+                <td className="r">
+                  <span className="num">{c.entregues > 0 ? c.entregues.toLocaleString('pt-BR') : '—'}</span>
+                  {c.total_envios > 0 && c.entregues > 0 && <span className="row-sub" style={{ marginLeft: 4 }}>{Math.round(c.entregues/c.total_envios*100)}%</span>}
+                </td>
+                <td className="r">
+                  <span className="num">{c.lidos > 0 ? c.lidos.toLocaleString('pt-BR') : '—'}</span>
+                  {c.entregues > 0 && c.lidos > 0 && <span className="row-sub" style={{ marginLeft: 4 }}>{Math.round(c.lidos/c.entregues*100)}%</span>}
+                </td>
+                <td className="r num" style={c.falhas > 0 ? { color: 'var(--danger)' } : {}}>
+                  {c.falhas > 0 ? c.falhas.toLocaleString('pt-BR') : '—'}
+                </td>
                 <td className="r num">{c.custo_total > 0 ? formatarMoeda(c.custo_total) : '—'}</td>
                 <td className="arrow-cell">›</td>
               </tr>

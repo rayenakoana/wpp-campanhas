@@ -214,12 +214,12 @@ function LegendaGrafico() {
   return (
     <div style={{ display: 'flex', gap: 18, fontSize: 12, color: 'var(--text-2)' }}>
       {[
-        { label: 'Enviadas', color: '#E8192C' },
+        { label: 'Enviadas', color: '#4285F4' },
         { label: 'Entregues', color: 'var(--text-3)' },
         { label: 'Lidas', color: '#C9A017' },
       ].map(s => (
         <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 2, background: s.color, display: 'inline-block' }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
           {s.label}
         </span>
       ))}
@@ -256,7 +256,7 @@ export default function Desempenho() {
       {/* Cabeçalho com título + filtro de período */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 'clamp(22px,3vw,30px)', letterSpacing: '-0.01em', lineHeight: 1.1, color: 'var(--text)' }}>
+          <h1 className="t-display" style={{ fontSize: 'clamp(22px,3vw,30px)' }}>
             Desempenho
           </h1>
           <p style={{ color: 'var(--text-3)', marginTop: 4, fontSize: 13 }}>
@@ -284,30 +284,29 @@ export default function Desempenho() {
         <>
           {/* KPIs */}
           <div className="kpi-row">
-            <div className="kpi-card">
-              <div className="kpi-label">Mensagens enviadas</div>
-              <div className="kpi-value num">{data.totalEnviado.toLocaleString('pt-BR')}</div>
-              <div className="kpi-sub">{dateLabel}</div>
-            </div>
-            <div className="kpi-card">
-              <div className="kpi-label">Taxa de entrega</div>
-              <div className="kpi-value num">{taxaEntrega}%</div>
-              <div className="kpi-sub num">{data.totalFalha} falhas</div>
-            </div>
-            <div className="kpi-card">
-              <div className="kpi-label">Taxa de leitura</div>
-              <div className="kpi-value num">{taxaLeitura}%</div>
-              <div className="kpi-sub num">{data.totalLido.toLocaleString('pt-BR')} leituras</div>
-            </div>
-            <div className="kpi-card">
-              <div className="kpi-label">Custo do período</div>
-              <div className="kpi-value num">{formatarMoeda(data.custoTotal)}</div>
-              <div className="kpi-sub num">
-                {data.totalEnviado > 0
-                  ? `R$ ${(data.custoTotal / data.totalEnviado).toFixed(2).replace('.', ',')} por mensagem`
-                  : '—'}
+            {[
+              { label: 'Mensagens enviadas', value: data.totalEnviado.toLocaleString('pt-BR'),
+                sub: dateLabel, accent: '#4285F4' },
+              { label: 'Taxa de entrega', value: `${taxaEntrega}%`,
+                sub: `de ${data.totalEnviado.toLocaleString('pt-BR')} enviadas · ${data.totalFalha} falhas`,
+                accent: '#34A853', danger: data.totalFalha > 0 && data.totalFalha / (data.totalEnviado || 1) > 0.05 },
+              { label: 'Taxa de leitura', value: `${taxaLeitura}%`,
+                sub: `${data.totalLido.toLocaleString('pt-BR')} de ${data.totalEntregue.toLocaleString('pt-BR')} entregues`,
+                accent: '#FBBC04' },
+              { label: 'Custo do período', value: formatarMoeda(data.custoTotal),
+                sub: data.totalEnviado > 0 ? `R$ ${(data.custoTotal / data.totalEnviado).toFixed(2).replace('.', ',')} por mensagem` : '—',
+                accent: '#9AA0A6' },
+            ].map(k => (
+              <div key={k.label} className="kpi-card" style={{ position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: k.accent, borderRadius: '8px 8px 0 0', opacity: 0.7 }} />
+                <div className="kpi-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: k.accent, flexShrink: 0, opacity: 0.8 }} />
+                  {k.label}
+                </div>
+                <div className="kpi-value num" style={(k as any).danger ? { color: 'var(--danger)' } : {}}>{k.value}</div>
+                <div className="kpi-sub">{k.sub}</div>
               </div>
-            </div>
+            ))}
           </div>
 
           {/* Gráfico + Saúde */}
@@ -384,9 +383,15 @@ export default function Desempenho() {
                       <td><div className="row-title">{c.name}</div></td>
                       <td><span className="status-txt st-neutral">{rotuloStatus[c.status] ?? c.status}</span></td>
                       <td className="r num">{c.total_envios}</td>
-                      <td className="r num">{c.entregues}</td>
-                      <td className="r num">{c.lidos}</td>
-                      <td className="r num">{c.falhas > 0 ? c.falhas : '—'}</td>
+                      <td className="r">
+                        <span className="num">{c.entregues}</span>
+                        {c.total_envios > 0 && <span className="row-sub" style={{ marginLeft: 4 }}>{Math.round(c.entregues/c.total_envios*100)}%</span>}
+                      </td>
+                      <td className="r">
+                        <span className="num">{c.lidos}</span>
+                        {c.total_envios > 0 && <span className="row-sub" style={{ marginLeft: 4 }}>{Math.round(c.lidos/c.total_envios*100)}%</span>}
+                      </td>
+                      <td className="r num" style={c.falhas > 0 ? { color: 'var(--danger)' } : {}}>{c.falhas > 0 ? c.falhas : '—'}</td>
                       <td className="row-sub">{formatarData(c.created_at)}</td>
                     </tr>
                   ))}
