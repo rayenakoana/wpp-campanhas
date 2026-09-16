@@ -596,17 +596,21 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
     <>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:20}}>
         {[
-          {label:'Leads gerados',value:fmtNum(totalLeads),sub:`${campaignSeries.length} campanhas`},
-          {label:'Alcance único',value:fmtNum(totalReach),sub:`${fmtNum(campaignSeries.reduce((s,c)=>s+c.total_impressions,0))} impressões`},
-          {label:'Frequência média',value:avgFreq>0?avgFreq.toFixed(2)+'×':'—',sub:freqAlert?'Acima de 3×, saturando':'Dentro do ideal',warn:freqAlert},
-          {label:'Gasto total',value:fmtBRL(totalSpend),sub:`CPL ${fmtBRL(avgCPL)}`},
-          {label:'Conversas WhatsApp',value:totalConversations>0?fmtNum(totalConversations):'—',sub:convRate>0?`${convRate.toFixed(1).replace('.',',')}% dos leads`:'aguardando dados',green:convRate>0},
-          {label:'Receita atribuída',value:fmtBRL(totalRev),sub:`ROAS ${fmtROAS(avgROAS)}`,gold:true},
-          {label:'Campanhas WPP',value:fmtNum(wppCampanhas.length),sub:totalWppEnvios>0?`${fmtNum(totalWppEnvios)} disparos`:'—'},
-          {label:'Taxa de leitura WPP',value:totalWppEnvios>0?`${((totalWppLidos/totalWppEnvios)*100).toFixed(1).replace('.',',')}%`:'—',sub:totalWppRespondidos>0?`${fmtNum(totalWppRespondidos)} responderam`:(totalWppCusto>0?`Custo ${fmtBRL(totalWppCusto)}`:'—')},
+          {label:'Leads gerados',value:fmtNum(totalLeads),sub:`${campaignSeries.length} campanhas`,accent:'#4285F4'},
+          {label:'Alcance único',value:fmtNum(totalReach),sub:`${fmtNum(campaignSeries.reduce((s,c)=>s+c.total_impressions,0))} impressões`,accent:'#9AA0A6'},
+          {label:'Frequência média',value:avgFreq>0?avgFreq.toFixed(2)+'×':'—',sub:freqAlert?'Acima de 3×, saturando':'Dentro do ideal',warn:freqAlert,accent:freqAlert?'var(--gold)':'#9AA0A6'},
+          {label:'Gasto total',value:fmtBRL(totalSpend),sub:`CPL ${fmtBRL(avgCPL)}`,accent:'var(--text-3)'},
+          {label:'Conversas WhatsApp',value:totalConversations>0?fmtNum(totalConversations):'—',sub:convRate>0?`${convRate.toFixed(1).replace('.',',')}% dos leads`:'aguardando dados',green:convRate>0,accent:'#34A853'},
+          {label:'Receita atribuída',value:fmtBRL(totalRev),sub:`ROAS ${fmtROAS(avgROAS)}`,gold:true,accent:'var(--gold)'},
+          {label:'Campanhas WPP',value:fmtNum(wppCampanhas.length),sub:totalWppEnvios>0?`${fmtNum(totalWppEnvios)} disparos`:'—',accent:'#9AA0A6'},
+          {label:'Taxa de leitura WPP',value:totalWppEnvios>0?`${((totalWppLidos/totalWppEnvios)*100).toFixed(1).replace('.',',')}%`:'—',sub:totalWppRespondidos>0?`${fmtNum(totalWppRespondidos)} responderam`:(totalWppCusto>0?`Custo ${fmtBRL(totalWppCusto)}`:'—'),accent:'#FBBC04'},
         ].map(k=>(
-          <div key={k.label} className="kpi-card">
-            <div className="kpi-label"><span className="base-mark"/> {k.label}</div>
+          <div key={k.label} className="kpi-card" style={{ position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: (k as any).accent ?? 'var(--line)', borderRadius: '8px 8px 0 0', opacity: 0.7 }} />
+            <div className="kpi-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: (k as any).accent ?? 'var(--text-3)', flexShrink: 0, opacity: 0.8 }} />
+              {k.label}
+            </div>
             <div className="kpi-value num" style={(k as any).gold?{color:'var(--gold)'}:(k as any).warn?{color:'var(--gold)'}:(k as any).green?{color:'var(--green)'}:{}}>{k.value}</div>
             <div className="kpi-sub" style={(k as any).warn?{color:'var(--gold)'}:{}}>{k.sub}</div>
           </div>
@@ -640,9 +644,9 @@ function GeralView({campaignSeries,wppCampanhas,funilSteps,totalLeads,totalSpend
               return (
                 <div className="conv-step" key={step.label}>
                   <div className="step-name">{step.label}<small>{step.sub}</small></div>
-                  <div className="conv-track"><div className="conv-fill" style={{width:`${Math.min(pct,100)}%`,background:step.gold?'var(--gold)':'var(--red)',opacity:pct===0?0.15:1}}/></div>
+                  <div className="conv-track"><div className="conv-fill" style={{width:`${Math.min(pct,100)}%`,background:step.gold?'var(--gold)':step.label==='Lead'?'#4285F4':step.label==='CompleteRegistration'?'#4ECDC4':step.label==='AddToCart'?'#9C27B0':step.label==='Schedule'?'#FBBC04':step.label==='InitiateCheckout'?'#FF8C42':'var(--red)',opacity:pct===0?0.15:1}}/></div>
                   <div className="conv-nums">
-                    <span className="conv-abs num" style={{color:step.gold?'var(--gold)':step.count===0?'var(--text-3)':'var(--text)'}}>{step.count>0?fmtNum(step.count):'—'}</span>
+                    <span className="conv-abs num" style={{color:step.gold?'var(--gold)':step.count===0?'var(--text-3)':'var(--text)',fontWeight:700}}>{step.count>0?fmtNum(step.count):'—'}</span>
                     <span className="conv-rel num">{pct>0?`${pct.toFixed(1).replace('.',',')}%`:'aguardando'}</span>
                   </div>
                 </div>
@@ -713,9 +717,9 @@ function FunilCRMView({ funilSteps, capiEvents, leadsByPhone, leadCount, onOpenL
               return (
                 <div className="conv-step" key={step.label}>
                   <div className="step-name">{step.label}<small>{step.sub}</small></div>
-                  <div className="conv-track"><div className="conv-fill" style={{width:`${Math.min(pct,100)}%`,background:step.gold?'var(--gold)':'var(--red)',opacity:pct===0?0.15:1}}/></div>
+                  <div className="conv-track"><div className="conv-fill" style={{width:`${Math.min(pct,100)}%`,background:step.gold?'var(--gold)':step.label==='Lead'?'#4285F4':step.label==='CompleteRegistration'?'#4ECDC4':step.label==='AddToCart'?'#9C27B0':step.label==='Schedule'?'#FBBC04':step.label==='InitiateCheckout'?'#FF8C42':'var(--red)',opacity:pct===0?0.15:1}}/></div>
                   <div className="conv-nums">
-                    <span className="conv-abs num" style={{color:step.gold?'var(--gold)':step.count===0?'var(--text-3)':'var(--text)'}}>{step.count>0?fmtNum(step.count):'—'}</span>
+                    <span className="conv-abs num" style={{color:step.gold?'var(--gold)':step.count===0?'var(--text-3)':'var(--text)',fontWeight:700}}>{step.count>0?fmtNum(step.count):'—'}</span>
                     <span className="conv-rel num">{pct>0?`${pct.toFixed(1).replace('.',',')}%`:'aguardando'}</span>
                   </div>
                 </div>
@@ -808,9 +812,9 @@ function MetaView({ campaignSeries, totalLeads, totalConversations, avgFreq, onD
     <>
       <div style={{display:'flex',gap:18,marginBottom:18,borderBottom:'1px solid var(--line-soft)'}}>
         {SUB.map(s=>(
-          <div key={s.key} onClick={()=>setSubTab(s.key)} style={{padding:'0 2px 10px',fontSize:13,fontWeight:500,cursor:'pointer',marginBottom:-1,color:subTab===s.key?'var(--text)':'var(--text-3)',borderBottom:subTab===s.key?'1.5px solid var(--red)':'1.5px solid transparent'}}>
+          <button key={s.key} onClick={()=>setSubTab(s.key)} style={{padding:'0 2px 10px',fontSize:13,fontWeight:500,cursor:'pointer',marginBottom:-1,color:subTab===s.key?'var(--text)':'var(--text-3)',borderBottom:subTab===s.key?'1.5px solid var(--red)':'1.5px solid transparent',background:'none',border:'none',borderBottom:subTab===s.key?'1.5px solid var(--red)':'1.5px solid transparent',fontFamily:'Inter,sans-serif'}}>
             {s.label}
-          </div>
+          </button>
         ))}
       </div>
       {subTab==='campanhas'&&<CampanhaMetaView campaignSeries={campaignSeries} onDetail={onDetail}/>}
@@ -831,7 +835,7 @@ function CampanhaMetaView({ campaignSeries, onDetail }: { campaignSeries: Campai
           <div className="panel-head" style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
             <div className="panel-title">Evolução diária <span>por campanha</span></div>
             <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
-              {METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:12,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--red)':'transparent',color:metric===m.key?'#fff':'var(--text-3)'}}>{m.label}</button>)}
+              {METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:12,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--surface-2)':'transparent',color:metric===m.key?'var(--text)':'var(--text-3)',boxShadow:metric===m.key?'inset 0 0 0 1px var(--line)':'none'}}>{m.label}</button>)}
             </div>
           </div>
           <LineChart series={campaignSeries} metric={metric} height={200}/>
@@ -1215,7 +1219,6 @@ function WppDetalheCampanha({ campanha, onBack }: { campanha: WppCampanha; onBac
 
 function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
   const [detalheCampanha, setDetalheCampanha] = useState<WppCampanha | null>(null)
-  const [selectedCampanha] = useState<WppCampanha | null>(null)
 
   if (detalheCampanha) {
     return <WppDetalheCampanha campanha={detalheCampanha} onBack={() => setDetalheCampanha(null)} />
@@ -1237,8 +1240,6 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
   const taxaEntrega = totalEnvios > 0 ? ((totalEntregues / totalEnvios) * 100).toFixed(1).replace('.', ',') : '—'
   const taxaLeitura = totalEntregues > 0 ? ((totalLidos / totalEntregues) * 100).toFixed(1).replace('.', ',') : '—'
   const taxaResposta = totalLidos > 0 ? ((totalRespondidos / totalLidos) * 100).toFixed(1).replace('.', ',') : '—'
-
-  const campanha = selectedCampanha
 
   return (
     <>
@@ -1298,13 +1299,11 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
             </thead>
             <tbody>
               {wppCampanhas.map(c => {
-                const isSelected = campanha?.id === c.id
-                return (
+                            return (
                   <tr
                     key={c.id}
                     className="rowlink"
                     onClick={() => setDetalheCampanha(c)}
-                    style={isSelected ? { background: 'var(--active)' } : {}}
                   >
                     <td>
                       <div className="row-title">{c.name}</div>
@@ -1317,19 +1316,19 @@ function WppView({ wppCampanhas }: { wppCampanhas: WppCampanha[] }) {
                     <td className="r num">
                       {fmtNum(c.entregues)}
                       <span style={{ color: 'var(--text-3)', fontSize: 11, marginLeft: 4 }}>
-                        {c.total_envios > 0 ? `${((c.entregues / c.total_envios) * 100).toFixed(0)}%` : ''}
+                        {c.total_envios > 0 && c.entregues > 0 ? `${((c.entregues / c.total_envios) * 100).toFixed(1)}%` : ''}
                       </span>
                     </td>
                     <td className="r num">
                       {fmtNum(c.lidos)}
                       <span style={{ color: 'var(--text-3)', fontSize: 11, marginLeft: 4 }}>
-                        {c.entregues > 0 ? `${((c.lidos / c.entregues) * 100).toFixed(0)}%` : ''}
+                        {c.entregues > 0 && c.lidos > 0 ? `${((c.lidos / c.entregues) * 100).toFixed(1)}%` : ''}
                       </span>
                     </td>
                     <td className="r num" style={{ color: c.respondidos > 0 ? 'var(--green)' : 'var(--text-3)' }}>
                       {c.respondidos > 0 ? fmtNum(c.respondidos) : '—'}
                       <span style={{ color: 'var(--text-3)', fontSize: 11, marginLeft: 4 }}>
-                        {c.lidos > 0 && c.respondidos > 0 ? `${((c.respondidos / c.lidos) * 100).toFixed(0)}%` : ''}
+                        {c.lidos > 0 && c.respondidos > 0 ? `${((c.respondidos / c.lidos) * 100).toFixed(1)}%` : ''}
                       </span>
                     </td>
                     <td className="r num" style={{ color: c.falhas > 0 ? 'var(--danger)' : 'var(--text-3)' }}>
@@ -1495,15 +1494,19 @@ function DetailView({series,onBack}:{series:CampaignSeries;onBack:()=>void}) {
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:12,marginBottom:20}}>
         {[
-          {label:'Leads',value:fmtNum(series.total_leads)},
-          {label:'Alcance único',value:series.total_reach>0?fmtNum(series.total_reach):'—'},
-          {label:'Frequência média',value:series.avg_frequency>0?series.avg_frequency.toFixed(2)+'×':'—',warn:series.avg_frequency>=3},
-          {label:'Conversas WPP',value:series.total_conversations>0?fmtNum(series.total_conversations):'—',sub:convRate!=='—'?`${convRate} dos leads`:''},
-          {label:'Gasto total',value:fmtBRL(series.total_spend),sub:`CPL ${fmtBRL(series.avg_cpl)}`},
-          {label:'CTR',value:ctr,sub:`${fmtNum(series.total_clicks)} cliques`},
+          {label:'Leads',value:fmtNum(series.total_leads),accent:'#4285F4'},
+          {label:'Alcance único',value:series.total_reach>0?fmtNum(series.total_reach):'—',accent:'#9AA0A6'},
+          {label:'Frequência média',value:series.avg_frequency>0?series.avg_frequency.toFixed(2)+'×':'—',warn:series.avg_frequency>=3,accent:series.avg_frequency>=3?'var(--gold)':'#9AA0A6'},
+          {label:'Conversas WPP',value:series.total_conversations>0?fmtNum(series.total_conversations):'—',sub:convRate!=='—'?`${convRate} dos leads`:'',accent:'#34A853'},
+          {label:'Gasto total',value:fmtBRL(series.total_spend),sub:`CPL ${fmtBRL(series.avg_cpl)}`,accent:'var(--text-3)'},
+          {label:'CTR',value:ctr,sub:`${fmtNum(series.total_clicks)} cliques`,accent:'var(--text-3)'},
         ].map(k=>(
-          <div key={k.label} className="kpi-card">
-            <div className="kpi-label"><span className="base-mark"/> {k.label}</div>
+          <div key={k.label} className="kpi-card" style={{ position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: (k as any).accent ?? 'var(--text-3)', borderRadius: '8px 8px 0 0', opacity: 0.7 }} />
+            <div className="kpi-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: (k as any).accent ?? 'var(--text-3)', flexShrink: 0, opacity: 0.8 }} />
+              {k.label}
+            </div>
             <div className="kpi-value num" style={(k as any).warn?{color:'var(--gold)'}:{}}>{k.value}</div>
             {(k as any).sub&&<div className="kpi-sub num">{(k as any).sub}</div>}
           </div>
@@ -1530,7 +1533,7 @@ function DetailView({series,onBack}:{series:CampaignSeries;onBack:()=>void}) {
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,flexWrap:'wrap',gap:8}}>
             <div className="panel-title">Evolução diária</div>
             <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
-              {METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:12,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--red)':'transparent',color:metric===m.key?'#fff':'var(--text-3)'}}>{m.label}</button>)}
+              {METRICS.map(m=><button key={m.key} onClick={()=>setMetric(m.key)} style={{padding:'4px 10px',fontSize:12,borderRadius:5,border:'none',cursor:'pointer',fontWeight:500,background:metric===m.key?'var(--surface-2)':'transparent',color:metric===m.key?'var(--text)':'var(--text-3)',boxShadow:metric===m.key?'inset 0 0 0 1px var(--line)':'none'}}>{m.label}</button>)}
             </div>
           </div>
           <LineChart series={[series]} metric={metric} height={180}/>
@@ -1541,7 +1544,7 @@ function DetailView({series,onBack}:{series:CampaignSeries;onBack:()=>void}) {
         <div className="panel-head"><div className="panel-title">Dados diários</div></div>
         <div style={{overflowX:'auto',width:'100%'}}>
           <table className="data-table">
-            <thead><tr><th>Data</th><th className="r">Leads</th><th className="r">Alcance</th><th className="r">Freq.</th><th className="r">Impressões</th><th className="r">Cliques</th><th className="r">CTR</th><th className="r">Gasto</th><th className="r">CPL</th></tr></thead>
+            <thead><tr><th style={{minWidth:80}}>Data</th><th className="r" style={{minWidth:60}}>Leads</th><th className="r" style={{minWidth:80}}>Alcance</th><th className="r" style={{minWidth:60}}>Freq.</th><th className="r" style={{minWidth:90}}>Impressões</th><th className="r" style={{minWidth:70}}>Cliques</th><th className="r" style={{minWidth:60}}>CTR</th><th className="r" style={{minWidth:90}}>Gasto</th><th className="r" style={{minWidth:80}}>CPL</th></tr></thead>
             <tbody>
               {[...series.points].reverse().map(p=>{
                 const ctr=p.impressions>0?`${((p.clicks/p.impressions)*100).toFixed(2).replace('.',',')}%`:'—'
