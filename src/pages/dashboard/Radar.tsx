@@ -812,7 +812,7 @@ function MetaView({ campaignSeries, totalLeads, totalConversations, avgFreq, onD
     <>
       <div style={{display:'flex',gap:18,marginBottom:18,borderBottom:'1px solid var(--line-soft)'}}>
         {SUB.map(s=>(
-          <button key={s.key} onClick={()=>setSubTab(s.key)} style={{padding:'0 2px 10px',fontSize:13,fontWeight:500,cursor:'pointer',marginBottom:-1,color:subTab===s.key?'var(--text)':'var(--text-3)',borderBottom:subTab===s.key?'1.5px solid var(--red)':'1.5px solid transparent',background:'none',border:'none',borderBottom:subTab===s.key?'1.5px solid var(--red)':'1.5px solid transparent',fontFamily:'Inter,sans-serif'}}>
+          <button key={s.key} onClick={()=>setSubTab(s.key)} style={{padding:'0 2px 10px',fontSize:13,fontWeight:500,cursor:'pointer',marginBottom:-1,color:subTab===s.key?'var(--text)':'var(--text-3)',background:'none',border:'none',borderBottom:subTab===s.key?'1.5px solid var(--red)':'1.5px solid transparent',fontFamily:'Inter,sans-serif'}}>
             {s.label}
           </button>
         ))}
